@@ -1,0 +1,1596 @@
+/* =====================================================
+   AVR PAGE
+   AUDIO-VISUAL ROOM
+
+   AVR-specific styling is scoped under
+   .avr-page so it does NOT affect Home.jsx
+   or Library.jsx
+===================================================== */
+
+.avr-page {
+  --avr-dark-blue: #12345b;
+  --avr-dark-blue-2: #0d2947;
+  --avr-blue: #1d4f7a;
+
+  --avr-gold: #c9a227;
+  --avr-gold-light: #e6d28a;
+
+  --avr-light-blue: #edf4fa;
+
+  width: 100%;
+  min-height: 100vh;
+
+  background: #ffffff;
+  color: #17212b;
+
+  overflow-x: hidden;
+}
+
+
+/* =====================================================
+   GLOBAL AVR CONTAINER
+===================================================== */
+
+.avr-page .container {
+  width: min(1180px, calc(100% - 40px));
+  margin-left: auto;
+  margin-right: auto;
+}
+
+
+/* =====================================================
+   PAGE INDICATOR
+===================================================== */
+
+.avr-page .avr-page-indicator {
+  background: var(--avr-dark-blue);
+  color: #ffffff;
+  border-bottom: 2px solid var(--avr-gold);
+}
+
+.avr-page .avr-page-indicator .container {
+  min-height: 38px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+.avr-page .avr-page-indicator span {
+  opacity: 0.7;
+}
+
+.avr-page .avr-page-indicator strong {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+
+/* =====================================================
+   HEADER SAFETY
+===================================================== */
+
+.avr-page .main-header {
+  position: relative;
+  z-index: 100;
+}
+
+.avr-page .header-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.avr-page .brand {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.avr-page .brand-logo {
+  display: block;
+  object-fit: contain;
+}
+
+.avr-page .brand-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.avr-page .main-navigation {
+  display: flex;
+  align-items: center;
+}
+
+.avr-page .header-actions {
+  display: flex;
+  align-items: center;
+}
+
+.avr-page .nav-dropdown {
+  position: relative;
+}
+
+
+/* =====================================================
+   HERO
+===================================================== */
+
+.avr-page .avr-hero {
+  position: relative;
+
+  background: #f5f8fb;
+
+  border-bottom: 1px solid #dce5ed;
+
+  padding: 45px 0 40px;
+
+  overflow: hidden;
+}
+
+.avr-page .avr-hero::before {
+  content: "";
+
+  position: absolute;
+
+  width: 380px;
+  height: 380px;
+
+  border-radius: 50%;
+
+  background: rgba(18, 52, 91, 0.04);
+
+  right: -120px;
+  top: -180px;
+
+  pointer-events: none;
+}
+
+.avr-page .avr-hero::after {
+  content: "";
+
+  position: absolute;
+
+  width: 90px;
+  height: 4px;
+
+  background: var(--avr-gold);
+
+  left: 0;
+  bottom: 0;
+}
+
+.avr-page .avr-hero-container {
+  position: relative;
+
+  z-index: 1;
+
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1.35fr)
+    minmax(320px, 0.65fr);
+
+  align-items: center;
+
+  gap: 40px;
+}
+
+.avr-page .avr-hero-content {
+  width: 100%;
+  max-width: 700px;
+}
+
+.avr-page .avr-label {
+  display: inline-block;
+
+  margin-bottom: 10px;
+
+  color: var(--avr-dark-blue);
+
+  font-size: 11px;
+
+  font-weight: 800;
+
+  letter-spacing: 0.14em;
+
+  line-height: 1.4;
+}
+
+.avr-page .avr-hero h1 {
+  margin: 0;
+
+  font-size: clamp(42px, 5vw, 68px);
+
+  line-height: 0.98;
+
+  font-weight: 800;
+
+  letter-spacing: -0.045em;
+}
+
+.avr-page .avr-hero h1 span {
+  display: block;
+
+  color: var(--avr-dark-blue);
+}
+
+.avr-page .avr-hero-content > p {
+  max-width: 650px;
+
+  margin: 16px 0 21px;
+
+  color: #5c6874;
+
+  font-size: 16px;
+
+  line-height: 1.65;
+}
+
+.avr-page .avr-hero-actions {
+  display: flex;
+
+  align-items: center;
+
+  flex-wrap: wrap;
+
+  gap: 10px;
+}
+
+
+/* =====================================================
+   BUTTONS
+===================================================== */
+
+.avr-page .primary-button,
+.avr-page .secondary-button {
+  display: inline-flex;
+
+  align-items: center;
+  justify-content: center;
+
+  min-height: 44px;
+
+  padding: 0 19px;
+
+  text-decoration: none;
+
+  font-size: 13px;
+
+  font-weight: 700;
+
+  border-radius: 5px;
+
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.avr-page .primary-button {
+  background: var(--avr-dark-blue);
+
+  color: #ffffff;
+
+  border: 1px solid var(--avr-dark-blue);
+}
+
+.avr-page .primary-button:hover {
+  background: var(--avr-dark-blue-2);
+
+  transform: translateY(-2px);
+}
+
+.avr-page .secondary-button {
+  background: #ffffff;
+
+  color: var(--avr-dark-blue);
+
+  border: 1px solid #cbd8e3;
+}
+
+.avr-page .secondary-button:hover {
+  border-color: var(--avr-gold);
+
+  transform: translateY(-2px);
+}
+
+
+/* =====================================================
+   OPERATING HOURS
+===================================================== */
+
+.avr-page .avr-hero-hours {
+  width: 100%;
+  box-sizing: border-box;
+
+  background: #ffffff;
+
+  border: 1px solid #d7e1ea;
+
+  border-top: 4px solid var(--avr-dark-blue);
+
+  border-radius: 5px;
+
+  padding: 20px 21px 15px;
+
+  box-shadow:
+    0 10px 25px rgba(13, 41, 71, 0.08);
+}
+
+.avr-page .avr-hours-header {
+  padding-bottom: 12px;
+
+  margin-bottom: 2px;
+
+  border-bottom: 1px solid #e7edf2;
+}
+
+.avr-page .avr-hours-header > span {
+  display: block;
+
+  margin-bottom: 4px;
+
+  color: var(--avr-gold);
+
+  font-size: 10px;
+
+  font-weight: 800;
+
+  letter-spacing: 0.13em;
+}
+
+.avr-page .avr-hours-header h2 {
+  margin: 0;
+
+  color: #17212b;
+
+  font-size: 21px;
+
+  line-height: 1.2;
+}
+
+.avr-page .avr-hours-list {
+  display: flex;
+
+  flex-direction: column;
+}
+
+.avr-page .avr-hour-row {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 15px;
+
+  padding: 9px 0;
+
+  border-bottom: 1px solid #edf1f4;
+}
+
+.avr-page .avr-hour-row:last-child {
+  border-bottom: 0;
+}
+
+.avr-page .avr-hour-row strong {
+  color: #25313d;
+
+  font-size: 13px;
+}
+
+.avr-page .avr-hour-row span {
+  color: var(--avr-dark-blue);
+
+  font-size: 12px;
+
+  font-weight: 700;
+
+  text-align: right;
+}
+
+.avr-page .avr-hours-loading,
+.avr-page .avr-hours-empty {
+  padding: 18px 0 4px;
+
+  color: #687681;
+
+  font-size: 13px;
+
+  line-height: 1.5;
+}
+
+
+/* =====================================================
+   MARQUEE
+===================================================== */
+
+.avr-page .avr-marquee {
+  width: 100%;
+
+  overflow: hidden;
+
+  background: var(--avr-dark-blue);
+
+  color: #ffffff;
+
+  border-top: 1px solid var(--avr-dark-blue);
+
+  border-bottom: 2px solid var(--avr-gold);
+}
+
+.avr-page .avr-marquee-track {
+  width: max-content;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 27px;
+
+  padding: 10px 0;
+
+  animation: avrMarquee 28s linear infinite;
+
+  will-change: transform;
+}
+
+.avr-page .avr-marquee-track span {
+  font-size: 11px;
+
+  font-weight: 800;
+
+  letter-spacing: 0.16em;
+
+  white-space: nowrap;
+}
+
+.avr-page .avr-marquee-track i {
+  font-style: normal;
+
+  color: var(--avr-gold-light);
+
+  opacity: 0.9;
+
+  font-size: 12px;
+
+  flex-shrink: 0;
+}
+
+@keyframes avrMarquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+
+/* =====================================================
+   GENERAL SECTION
+
+   Reduced vertical spacing and forced the section
+   heading to remain vertically organized.
+===================================================== */
+
+.avr-page .avr-section {
+  width: 100%;
+
+  padding: 42px 0;
+}
+
+.avr-page .avr-section:nth-of-type(even) {
+  background: #f8fafc;
+}
+
+
+/* =====================================================
+   SECTION HEADING
+===================================================== */
+
+.avr-page .avr-section-heading {
+  width: 100%;
+  max-width: 720px;
+
+  margin: 0 auto 25px;
+
+  /*
+    IMPORTANT:
+    Force the label, title and description to stack
+    vertically instead of appearing side-by-side.
+  */
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  text-align: center;
+}
+
+.avr-page .section-label {
+  display: block;
+
+  width: 100%;
+
+  margin-bottom: 6px;
+
+  color: var(--avr-gold);
+
+  font-size: 9px;
+
+  font-weight: 800;
+
+  letter-spacing: 0.14em;
+
+  line-height: 1.4;
+
+  text-align: center;
+}
+
+.avr-page .avr-section-heading h2 {
+  display: block;
+
+  width: 100%;
+
+  margin: 0;
+
+  color: #18222c;
+
+  font-size: clamp(29px, 4vw, 42px);
+
+  line-height: 1;
+
+  font-weight: 800;
+
+  letter-spacing: -0.035em;
+
+  text-align: center;
+}
+
+.avr-page .avr-section-heading h2 span {
+  color: var(--avr-dark-blue);
+}
+
+.avr-page .avr-section-heading p {
+  display: block;
+
+  width: 100%;
+  max-width: 590px;
+
+  margin: 10px auto 0;
+
+  color: #66737e;
+
+  font-size: 13px;
+
+  line-height: 1.55;
+
+  text-align: center;
+}
+
+
+/* =====================================================
+   CARD GRID
+===================================================== */
+
+.avr-page .avr-card-grid,
+.avr-page .avr-information-grid,
+.avr-page .avr-support-grid,
+.avr-page .avr-purpose-grid {
+  width: 100%;
+}
+
+.avr-page .avr-card-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  align-items: stretch;
+
+  gap: 20px;
+}
+
+
+/* =====================================================
+   NEWS CARD
+===================================================== */
+
+.avr-page .avr-news-card {
+  min-width: 0;
+
+  overflow: hidden;
+
+  display: flex;
+  flex-direction: column;
+
+  background: #ffffff;
+
+  border: 1px solid #dce4eb;
+
+  border-radius: 5px;
+
+  box-shadow:
+    0 7px 20px rgba(13, 41, 71, 0.05);
+
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+
+.avr-page .avr-news-card:hover {
+  transform: translateY(-5px);
+
+  border-color: var(--avr-gold);
+
+  box-shadow:
+    0 15px 30px rgba(13, 41, 71, 0.1);
+}
+
+
+/* =====================================================
+   NEWS IMAGE
+===================================================== */
+
+.avr-page .avr-card-image {
+  width: 100%;
+
+  height: 205px;
+
+  flex-shrink: 0;
+
+  overflow: hidden;
+
+  background: #eaf0f5;
+}
+
+.avr-page .avr-card-image img {
+  width: 100%;
+  height: 100%;
+
+  display: block;
+
+  object-fit: cover;
+
+  transition: transform 0.45s ease;
+}
+
+.avr-page .avr-news-card:hover .avr-card-image img {
+  transform: scale(1.04);
+}
+
+.avr-page .avr-no-image {
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  background:
+    linear-gradient(
+      135deg,
+      #e8eff5,
+      #d8e3ec
+    );
+}
+
+.avr-page .avr-no-image span {
+  color: var(--avr-dark-blue);
+
+  font-size: 11px;
+
+  font-weight: 800;
+
+  letter-spacing: 0.14em;
+}
+
+
+/* =====================================================
+   NEWS CONTENT
+===================================================== */
+
+.avr-page .avr-card-content {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  flex: 1;
+
+  padding: 17px 18px 18px;
+
+  text-align: left;
+}
+
+.avr-page .avr-content-date {
+  display: block;
+
+  margin-bottom: 6px;
+
+  color: var(--avr-blue);
+
+  font-size: 10px;
+
+  font-weight: 800;
+
+  letter-spacing: 0.05em;
+
+  text-transform: uppercase;
+}
+
+.avr-page .avr-card-content h3 {
+  margin: 0 0 7px;
+
+  color: #1c2731;
+
+  font-size: 18px;
+
+  line-height: 1.25;
+
+  font-weight: 750;
+
+  overflow-wrap: anywhere;
+}
+
+.avr-page .avr-card-text {
+  margin: 0;
+
+  color: #687681;
+
+  font-size: 13px;
+
+  line-height: 1.6;
+
+  display: -webkit-box;
+
+  -webkit-line-clamp: 5;
+
+  -webkit-box-orient: vertical;
+
+  overflow: hidden;
+
+  overflow-wrap: anywhere;
+}
+
+
+/* =====================================================
+   READ MORE
+===================================================== */
+
+.avr-page .avr-read-more {
+  align-self: flex-start;
+
+  margin-top: 11px;
+
+  padding: 0;
+
+  background: transparent;
+
+  border: 0;
+
+  border-bottom: 1px solid var(--avr-gold);
+
+  color: var(--avr-dark-blue);
+
+  font-size: 12px;
+
+  font-weight: 800;
+
+  letter-spacing: 0.02em;
+
+  cursor: pointer;
+
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.avr-page .avr-read-more:hover {
+  color: var(--avr-gold);
+
+  border-color: var(--avr-dark-blue);
+}
+
+
+/* =====================================================
+   EXPANDED TEXT
+===================================================== */
+
+.avr-page .avr-card-text.expanded {
+  display: block;
+
+  -webkit-line-clamp: unset;
+
+  overflow: visible;
+}
+
+
+/* =====================================================
+   INFORMATION & SERVICES
+===================================================== */
+
+.avr-page .avr-information-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  align-items: stretch;
+
+  gap: 20px;
+}
+
+.avr-page .avr-information-card {
+  min-width: 0;
+
+  overflow: hidden;
+
+  display: flex;
+  flex-direction: column;
+
+  background: #ffffff;
+
+  border: 1px solid #dce4eb;
+
+  border-top: 4px solid var(--avr-dark-blue);
+
+  border-radius: 5px;
+
+  box-shadow:
+    0 7px 20px rgba(13, 41, 71, 0.05);
+
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+
+.avr-page .avr-information-card:hover {
+  transform: translateY(-5px);
+
+  border-top-color: var(--avr-gold);
+
+  box-shadow:
+    0 15px 30px rgba(13, 41, 71, 0.1);
+}
+
+.avr-page .avr-information-image {
+  width: 100%;
+
+  height: 190px;
+
+  flex-shrink: 0;
+
+  overflow: hidden;
+
+  background: #e8eff5;
+}
+
+.avr-page .avr-information-image img {
+  width: 100%;
+  height: 100%;
+
+  display: block;
+
+  object-fit: cover;
+
+  transition: transform 0.45s ease;
+}
+
+.avr-page .avr-information-card:hover
+.avr-information-image img {
+  transform: scale(1.04);
+}
+
+.avr-page .avr-information-content {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  flex: 1;
+
+  padding: 17px 18px;
+
+  text-align: left;
+}
+
+.avr-page .avr-information-label {
+  display: block;
+
+  margin-bottom: 5px;
+
+  color: var(--avr-gold);
+
+  font-size: 9px;
+
+  font-weight: 800;
+
+  letter-spacing: 0.14em;
+}
+
+.avr-page .avr-information-content h3 {
+  margin: 0 0 7px;
+
+  color: #1b2732;
+
+  font-size: 19px;
+
+  line-height: 1.2;
+
+  overflow-wrap: anywhere;
+}
+
+.avr-page .avr-information-content p {
+  margin: 0;
+
+  color: #687681;
+
+  font-size: 13px;
+
+  line-height: 1.6;
+
+  display: -webkit-box;
+
+  -webkit-line-clamp: 5;
+
+  -webkit-box-orient: vertical;
+
+  overflow: hidden;
+
+  overflow-wrap: anywhere;
+}
+
+
+/* =====================================================
+   AVR SUPPORT
+===================================================== */
+
+.avr-page .avr-services-section {
+  background: #f4f7fa;
+}
+
+.avr-page .avr-support-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  align-items: stretch;
+
+  gap: 20px;
+}
+
+.avr-page .avr-support-card {
+  min-width: 0;
+
+  display: grid;
+
+  grid-template-columns: 44px minmax(0, 1fr);
+
+  align-items: start;
+
+  gap: 15px;
+
+  background: #ffffff;
+
+  border: 1px solid #d7e1e9;
+
+  border-left: 4px solid var(--avr-dark-blue);
+
+  border-radius: 5px;
+
+  padding: 19px;
+
+  box-shadow:
+    0 7px 20px rgba(13, 41, 71, 0.04);
+
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.avr-page .avr-support-card:hover {
+  border-left-color: var(--avr-gold);
+
+  transform: translateY(-2px);
+}
+
+.avr-page .avr-support-number {
+  color: var(--avr-gold);
+
+  font-size: 13px;
+
+  font-weight: 800;
+
+  letter-spacing: 0.05em;
+}
+
+.avr-page .avr-support-label {
+  display: block;
+
+  margin-bottom: 4px;
+
+  color: var(--avr-blue);
+
+  font-size: 9px;
+
+  font-weight: 800;
+
+  letter-spacing: 0.14em;
+}
+
+.avr-page .avr-support-card h3 {
+  margin: 0 0 7px;
+
+  color: #1b2732;
+
+  font-size: 20px;
+
+  line-height: 1.2;
+
+  overflow-wrap: anywhere;
+}
+
+.avr-page .avr-support-card p {
+  margin: 0;
+
+  color: #66737e;
+
+  font-size: 13px;
+
+  line-height: 1.6;
+
+  overflow-wrap: anywhere;
+}
+
+
+/* =====================================================
+   VISION / MISSION
+===================================================== */
+
+.avr-page .avr-purpose-section {
+  background: #f8fafc;
+}
+
+.avr-page .avr-purpose-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  align-items: stretch;
+
+  gap: 20px;
+}
+
+.avr-page .avr-purpose-card {
+  min-width: 0;
+
+  display: grid;
+
+  grid-template-columns: 44px minmax(0, 1fr);
+
+  align-items: start;
+
+  gap: 15px;
+
+  background: #ffffff;
+
+  border: 1px solid #d7e1e9;
+
+  border-left: 4px solid var(--avr-dark-blue);
+
+  border-radius: 5px;
+
+  padding: 19px;
+
+  box-shadow:
+    0 7px 20px rgba(13, 41, 71, 0.04);
+
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.avr-page .avr-purpose-card:hover {
+  border-left-color: var(--avr-gold);
+
+  transform: translateY(-2px);
+}
+
+.avr-page .avr-purpose-number {
+  color: var(--avr-gold);
+
+  font-size: 13px;
+
+  font-weight: 800;
+
+  letter-spacing: 0.05em;
+}
+
+.avr-page .avr-purpose-label {
+  display: block;
+
+  margin-bottom: 4px;
+
+  color: var(--avr-blue);
+
+  font-size: 9px;
+
+  font-weight: 800;
+
+  letter-spacing: 0.14em;
+}
+
+.avr-page .avr-purpose-card h3 {
+  margin: 0 0 7px;
+
+  color: #1b2732;
+
+  font-size: 22px;
+
+  line-height: 1.2;
+}
+
+.avr-page .avr-purpose-card p {
+  margin: 0;
+
+  color: #66737e;
+
+  font-size: 13px;
+
+  line-height: 1.65;
+
+  overflow-wrap: anywhere;
+}
+
+
+/* =====================================================
+   ACTIVE NAVIGATION
+===================================================== */
+
+.avr-page .nav-dropdown-item.active {
+  background: #f0f5f9;
+
+  border-left: 2px solid var(--avr-gold);
+}
+
+.avr-page .mobile-sub-link.active {
+  color: var(--avr-dark-blue);
+
+  font-weight: 700;
+
+  border-left: 3px solid var(--avr-gold);
+}
+
+
+/* =====================================================
+   LOADING
+===================================================== */
+
+.avr-page .avr-loading {
+  width: 100%;
+  box-sizing: border-box;
+
+  padding: 25px 10px;
+
+  color: #6a7782;
+
+  text-align: center;
+
+  font-size: 13px;
+}
+
+
+/* =====================================================
+   EMPTY
+===================================================== */
+
+.avr-page .avr-empty {
+  width: 100%;
+  box-sizing: border-box;
+
+  padding: 25px 15px;
+
+  background: #ffffff;
+
+  border: 1px dashed #cdd9e3;
+
+  border-radius: 5px;
+
+  color: #71808c;
+
+  text-align: center;
+
+  font-size: 13px;
+}
+
+
+/* =====================================================
+   FOOTER
+===================================================== */
+
+.avr-page .main-footer {
+  margin-top: 0;
+}
+
+.avr-page .footer-links a:hover {
+  color: var(--avr-gold);
+}
+
+
+/* =====================================================
+   TABLET
+===================================================== */
+
+@media (max-width: 1050px) {
+
+  .avr-page .avr-hero-container {
+    grid-template-columns: 1fr;
+
+    gap: 25px;
+  }
+
+  .avr-page .avr-hero-content {
+    max-width: 800px;
+  }
+
+  .avr-page .avr-hero-hours {
+    width: 100%;
+    max-width: 700px;
+  }
+
+  .avr-page .avr-card-grid,
+  .avr-page .avr-information-grid,
+  .avr-page .avr-support-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+}
+
+
+/* =====================================================
+   MOBILE NAVIGATION / BURGER
+===================================================== */
+
+@media (max-width: 760px) {
+
+  /*
+    Keep the desktop navigation hidden on mobile.
+    Your existing mobile menu / burger button can
+    then control the mobile navigation.
+  */
+
+  .avr-page .main-navigation {
+    display: none;
+  }
+
+  /*
+    Support common burger button class names.
+    These rules do not change the desktop header.
+  */
+
+  .avr-page .menu-toggle,
+  .avr-page .hamburger,
+  .avr-page .hamburger-button,
+  .avr-page .mobile-menu-toggle,
+  .avr-page .mobile-menu-button {
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    cursor: pointer;
+  }
+
+
+  /* =================================================
+     MOBILE CONTAINER
+  ================================================= */
+
+  .avr-page .container {
+    width: min(100% - 30px, 680px);
+  }
+
+
+  /* =================================================
+     MOBILE HERO
+  ================================================= */
+
+  .avr-page .avr-hero {
+    padding: 35px 0 30px;
+  }
+
+  .avr-page .avr-hero-container {
+    gap: 22px;
+  }
+
+  .avr-page .avr-hero h1 {
+    font-size: 42px;
+  }
+
+
+  /* =================================================
+     MOBILE SECTIONS
+  ================================================= */
+
+  .avr-page .avr-section {
+    padding: 35px 0;
+  }
+
+  .avr-page .avr-section-heading {
+    max-width: 600px;
+
+    margin-bottom: 21px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    text-align: center;
+  }
+
+  .avr-page .section-label {
+    margin-bottom: 5px;
+  }
+
+  .avr-page .avr-section-heading h2 {
+    font-size: 31px;
+
+    line-height: 1.02;
+
+    text-align: center;
+  }
+
+  .avr-page .avr-section-heading p {
+    max-width: 520px;
+
+    margin-top: 9px;
+
+    font-size: 13px;
+
+    line-height: 1.5;
+
+    text-align: center;
+  }
+
+
+  /* =================================================
+     MOBILE GRIDS
+  ================================================= */
+
+  .avr-page .avr-card-grid,
+  .avr-page .avr-information-grid,
+  .avr-page .avr-support-grid,
+  .avr-page .avr-purpose-grid {
+    grid-template-columns: 1fr;
+
+    gap: 17px;
+  }
+
+
+  /* =================================================
+     MOBILE IMAGES
+  ================================================= */
+
+  .avr-page .avr-card-image,
+  .avr-page .avr-information-image {
+    height: 205px;
+  }
+
+
+  /* =================================================
+     MOBILE CARDS
+  ================================================= */
+
+  .avr-page .avr-purpose-card,
+  .avr-page .avr-support-card {
+    grid-template-columns: 40px minmax(0, 1fr);
+
+    padding: 17px;
+
+    gap: 12px;
+  }
+
+}
+
+
+/* =====================================================
+   SMALL MOBILE
+===================================================== */
+
+@media (max-width: 520px) {
+
+  .avr-page .container {
+    width: calc(100% - 28px);
+  }
+
+
+  /* =================================================
+     PAGE INDICATOR
+  ================================================= */
+
+  .avr-page .avr-page-indicator .container {
+    min-height: 34px;
+
+    font-size: 11px;
+  }
+
+
+  /* =================================================
+     HERO
+  ================================================= */
+
+  .avr-page .avr-hero {
+    padding: 30px 0;
+  }
+
+  .avr-page .avr-hero h1 {
+    font-size: 37px;
+  }
+
+  .avr-page .avr-label {
+    font-size: 9px;
+  }
+
+  .avr-page .avr-hero-content > p {
+    margin: 14px 0 18px;
+
+    font-size: 14px;
+  }
+
+  .avr-page .avr-hero-actions {
+    flex-direction: column;
+
+    align-items: stretch;
+  }
+
+  .avr-page .primary-button,
+  .avr-page .secondary-button {
+    width: 100%;
+
+    box-sizing: border-box;
+  }
+
+
+  /* =================================================
+     HOURS
+  ================================================= */
+
+  .avr-page .avr-hero-hours {
+    padding: 17px;
+  }
+
+  .avr-page .avr-hour-row {
+    align-items: flex-start;
+
+    flex-direction: column;
+
+    gap: 3px;
+  }
+
+  .avr-page .avr-hour-row span {
+    text-align: left;
+  }
+
+
+  /* =================================================
+     SECTIONS
+  ================================================= */
+
+  .avr-page .avr-section {
+    padding: 31px 0;
+  }
+
+  .avr-page .avr-section-heading {
+    margin-bottom: 18px;
+  }
+
+  .avr-page .avr-section-heading h2 {
+    font-size: 29px;
+
+    line-height: 1.03;
+  }
+
+  .avr-page .avr-section-heading p {
+    font-size: 12px;
+
+    line-height: 1.5;
+
+    max-width: 430px;
+  }
+
+
+  /* =================================================
+     CARDS
+  ================================================= */
+
+  .avr-page .avr-card-content {
+    padding: 16px;
+  }
+
+  .avr-page .avr-card-image,
+  .avr-page .avr-information-image {
+    height: 195px;
+  }
+
+  .avr-page .avr-purpose-card,
+  .avr-page .avr-support-card {
+    grid-template-columns: 1fr;
+
+    gap: 7px;
+
+    padding: 17px;
+  }
+
+}
+
+
+/* =====================================================
+   EXTRA SMALL DEVICES
+===================================================== */
+
+@media (max-width: 380px) {
+
+  .avr-page .container {
+    width: calc(100% - 22px);
+  }
+
+  .avr-page .avr-hero h1 {
+    font-size: 33px;
+  }
+
+  .avr-page .avr-section {
+    padding: 28px 0;
+  }
+
+  .avr-page .avr-section-heading h2 {
+    font-size: 27px;
+  }
+
+  .avr-page .avr-section-heading p {
+    font-size: 12px;
+  }
+
+  .avr-page .avr-card-image,
+  .avr-page .avr-information-image {
+    height: 180px;
+  }
+
+}
+
+
+/* =====================================================
+   REDUCE MOTION
+===================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+
+  .avr-page .avr-marquee-track {
+    animation: none;
+  }
+
+  .avr-page .avr-news-card,
+  .avr-page .avr-information-card,
+  .avr-page .avr-support-card,
+  .avr-page .avr-purpose-card,
+  .avr-page .primary-button,
+  .avr-page .secondary-button {
+    transition: none;
+  }
+
+}
