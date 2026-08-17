@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../services/supabase";
-import hfaLogo from "../assets/hfalogo.png";
 import "./Avr.css";
 
 function Avr() {
@@ -530,11 +529,11 @@ function Avr() {
             className="brand"
             onClick={closeMenu}
           >
-            <img
-              src={hfaLogo}
-              alt="Instructional Media Center Logo"
-              className="brand-logo"
-            />
+        <img
+          src="/hfalogo.png"
+          alt="Instructional Media Center Logo"
+          className="brand-logo"
+        />
 
             <div className="brand-text">
 

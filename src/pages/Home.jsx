@@ -305,11 +305,11 @@ function Home() {
             onClick={closeMenu}
           >
 
-            <img
-              src="/src/assets/hfalogo.png"
-              alt="Instructional Media Center Logo"
-              className="brand-logo"
-            />
+        <img
+          src="/hfalogo.png"
+          alt="Instructional Media Center Logo"
+          className="brand-logo"
+        />
 
             <div className="brand-text">
 

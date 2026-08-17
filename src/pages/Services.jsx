@@ -1,5 +1,4 @@
 import { useState } from "react";
-import hfaLogo from "../assets/hfalogo.png";
 import "./Services.css";
 
 function Services() {
@@ -27,11 +26,11 @@ function Services() {
             className="brand"
             onClick={closeMenu}
           >
-            <img
-              src={hfaLogo}
-              alt="Instructional Media Center Logo"
-              className="brand-logo"
-            />
+<img
+  src="/hfalogo.png"
+  alt="Instructional Media Center Logo"
+  className="brand-logo"
+/>
 
             <div className="brand-text">
 

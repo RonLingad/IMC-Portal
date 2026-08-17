@@ -2004,10 +2004,10 @@ ${form.details.trim()}`;
             className="faculty-brand"
           >
             <div className="faculty-logo">
-              <img
-                src="/src/assets/hfalogo.png"
-                alt="Instructional Media Center"
-              />
+<img
+  src="/hfalogo.png"
+  alt="Instructional Media Center"
+/>
             </div>
 
             <div className="faculty-brand-text">

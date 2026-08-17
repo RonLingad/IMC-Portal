@@ -316,11 +316,11 @@ function Library() {
             className="brand"
             onClick={closeMenu}
           >
-            <img
-              src="/src/assets/hfalogo.png"
-              alt="Instructional Media Center Logo"
-              className="brand-logo"
-            />
+<img
+  src="/hfalogo.png"
+  alt="Instructional Media Center Logo"
+  className="brand-logo"
+/>
 
             <div className="brand-text">
               <span className="brand-name">

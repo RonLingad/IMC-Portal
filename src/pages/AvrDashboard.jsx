@@ -3024,10 +3024,10 @@ function AvrDashboard() {
       >
         <div className="avr-sidebar-top">
           <div className="avr-sidebar-brand">
-            <img
-              src="/src/assets/hfalogo.png"
-              alt="IMC"
-            />
+<img
+  src="/hfalogo.png"
+  alt="IMC"
+/>
 
             <div>
               <strong>

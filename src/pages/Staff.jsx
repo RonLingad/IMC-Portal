@@ -86,7 +86,7 @@ function Staff() {
 
       <div className="staff-background-logo">
         <img
-          src="/src/assets/hfalogo.png"
+          src="/hfalogo.png"
           alt=""
           aria-hidden="true"
         />
@@ -109,7 +109,7 @@ function Staff() {
             onClick={closeMenu}
           >
             <img
-              src="/src/assets/hfalogo.png"
+              src="/hfalogo.png"
               alt="Instructional Media Center Logo"
               className="brand-logo"
             />
