@@ -19,6 +19,18 @@ function Avr() {
   const [errorMessage, setErrorMessage] = useState("");
 
   /* =====================================================
+     NEWS MODAL
+  ===================================================== */
+
+  const [selectedNews, setSelectedNews] = useState(null);
+
+  /* =====================================================
+     CAROUSEL
+  ===================================================== */
+
+  const [newsIndex, setNewsIndex] = useState(0);
+
+  /* =====================================================
      MOBILE MENU
   ===================================================== */
 
@@ -28,13 +40,6 @@ function Avr() {
 
   /* =====================================================
      FETCH OPERATING HOURS
-     
-     IMPORTANT:
-     Dashboard uses:
-       avr_operating_hours
-
-     NOT:
-       avr_hours
   ===================================================== */
 
   const fetchSchedules = useCallback(async () => {
@@ -47,38 +52,19 @@ function Avr() {
         });
 
       if (error) {
-        console.error(
-          "AVR OPERATING HOURS ERROR:",
-          error
-        );
-
+        console.error("AVR OPERATING HOURS ERROR:", error);
         throw error;
       }
 
-      console.log(
-        "AVR OPERATING HOURS DATA:",
-        data
-      );
-
       setSchedules(data || []);
     } catch (error) {
-      console.error(
-        "Unexpected AVR hours error:",
-        error
-      );
-
+      console.error("Unexpected AVR hours error:", error);
       setSchedules([]);
     }
   }, []);
 
   /* =====================================================
-     FETCH AVR INFORMATION & SERVICES
-
-     Dashboard uses:
-       avr_information_services
-
-     NOT:
-       avr_information
+     FETCH AVR INFORMATION
   ===================================================== */
 
   const fetchInformation = useCallback(async () => {
@@ -91,101 +77,67 @@ function Avr() {
         });
 
       if (error) {
-        console.error(
-          "AVR INFORMATION ERROR:",
-          error
-        );
-
+        console.error("AVR INFORMATION ERROR:", error);
         throw error;
       }
 
-      console.log(
-        "AVR INFORMATION DATA:",
-        data
-      );
-
       setInformation(data || []);
     } catch (error) {
-      console.error(
-        "Unexpected AVR information error:",
-        error
-      );
-
+      console.error("Unexpected AVR information error:", error);
       setInformation([]);
     }
   }, []);
 
   /* =====================================================
      FETCH VISION & MISSION
-
-     Dashboard uses:
-       avr_vision_mission
-
-     Current dashboard structure:
-       title
-       body
-       image_url
   ===================================================== */
 
-  const fetchVisionMission =
-    useCallback(async () => {
-      try {
-        const { data, error } = await supabase
-          .from("avr_vision_mission")
-          .select("*")
-          .order("updated_at", {
-            ascending: false,
-          })
-          .limit(1);
+  const fetchVisionMission = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from("avr_vision_mission")
+        .select("*")
+        .order("updated_at", {
+          ascending: false,
+        })
+        .limit(1);
 
-        if (error) {
-          console.error(
-            "AVR VISION MISSION ERROR:",
-            error
-          );
+      if (error) {
+        console.error("AVR VISION MISSION ERROR:", error);
+        throw error;
+      }
 
-          throw error;
-        }
+      if (data && data.length > 0) {
+        const item = data[0];
 
-        console.log(
-          "AVR VISION MISSION DATA:",
-          data
-        );
-
-        if (data && data.length > 0) {
-          const item = data[0];
-
-          setVisionMission({
-            title: item.title || "",
-            body: item.body || "",
-            image_url: item.image_url || "",
-          });
-        } else {
-          setVisionMission({
-            title: "",
-            body: "",
-            image_url: "",
-          });
-        }
-      } catch (error) {
-        console.error(
-          "Unexpected AVR vision mission error:",
-          error
-        );
-
+        setVisionMission({
+          title: item.title || "",
+          body: item.body || "",
+          image_url: item.image_url || "",
+        });
+      } else {
         setVisionMission({
           title: "",
           body: "",
           image_url: "",
         });
       }
-    }, []);
+    } catch (error) {
+      console.error(
+        "Unexpected AVR vision mission error:",
+        error
+      );
+
+      setVisionMission({
+        title: "",
+        body: "",
+        image_url: "",
+      });
+    }
+  }, []);
 
   /* =====================================================
      FETCH AVR NEWS
-
-     Dashboard and public page both use:
-       avr_news
   ===================================================== */
 
   const fetchNews = useCallback(async () => {
@@ -201,26 +153,14 @@ function Avr() {
         });
 
       if (error) {
-        console.error(
-          "AVR NEWS ERROR:",
-          error
-        );
-
+        console.error("AVR NEWS ERROR:", error);
         throw error;
       }
 
-      console.log(
-        "AVR NEWS DATA:",
-        data
-      );
-
       setNews(data || []);
+      setNewsIndex(0);
     } catch (error) {
-      console.error(
-        "Unexpected AVR news error:",
-        error
-      );
-
+      console.error("Unexpected AVR news error:", error);
       setNews([]);
     }
   }, []);
@@ -230,18 +170,6 @@ function Avr() {
   ===================================================== */
 
   const fetchAvrData = useCallback(async () => {
-    console.log(
-      "======================================"
-    );
-
-    console.log(
-      "LOADING PUBLIC AVR DATA..."
-    );
-
-    console.log(
-      "======================================"
-    );
-
     setLoading(true);
     setErrorMessage("");
 
@@ -253,41 +181,17 @@ function Avr() {
         fetchNews(),
       ]);
 
-      let hasError = false;
-
-      results.forEach((result, index) => {
-        if (result.status === "rejected") {
-          hasError = true;
-
-          console.error(
-            `AVR request ${index} failed:`,
-            result.reason
-          );
-        }
-      });
+      const hasError = results.some(
+        (result) => result.status === "rejected"
+      );
 
       if (hasError) {
         setErrorMessage(
           "Some AVR information could not be loaded. Please try again."
         );
       }
-
-      console.log(
-        "======================================"
-      );
-
-      console.log(
-        "PUBLIC AVR DATA LOADING FINISHED"
-      );
-
-      console.log(
-        "======================================"
-      );
     } catch (error) {
-      console.error(
-        "AVR loading error:",
-        error
-      );
+      console.error("AVR loading error:", error);
 
       setErrorMessage(
         "Unable to load AVR information. Please try again."
@@ -317,16 +221,8 @@ function Avr() {
 
     initialize();
 
-    /* ===================================================
-       REALTIME
-    =================================================== */
-
     const channel = supabase
       .channel("avr-public-realtime")
-
-      /* -----------------------------------------------
-         OPERATING HOURS
-      ----------------------------------------------- */
 
       .on(
         "postgres_changes",
@@ -335,19 +231,10 @@ function Avr() {
           schema: "public",
           table: "avr_operating_hours",
         },
-        (payload) => {
-          console.log(
-            "Realtime AVR operating hours change:",
-            payload
-          );
-
+        () => {
           fetchSchedules();
         }
       )
-
-      /* -----------------------------------------------
-         INFORMATION & SERVICES
-      ----------------------------------------------- */
 
       .on(
         "postgres_changes",
@@ -356,19 +243,10 @@ function Avr() {
           schema: "public",
           table: "avr_information_services",
         },
-        (payload) => {
-          console.log(
-            "Realtime AVR information change:",
-            payload
-          );
-
+        () => {
           fetchInformation();
         }
       )
-
-      /* -----------------------------------------------
-         VISION & MISSION
-      ----------------------------------------------- */
 
       .on(
         "postgres_changes",
@@ -377,19 +255,10 @@ function Avr() {
           schema: "public",
           table: "avr_vision_mission",
         },
-        (payload) => {
-          console.log(
-            "Realtime AVR vision mission change:",
-            payload
-          );
-
+        () => {
           fetchVisionMission();
         }
       )
-
-      /* -----------------------------------------------
-         NEWS
-      ----------------------------------------------- */
 
       .on(
         "postgres_changes",
@@ -398,30 +267,12 @@ function Avr() {
           schema: "public",
           table: "avr_news",
         },
-        (payload) => {
-          console.log(
-            "Realtime AVR news change:",
-            payload
-          );
-
+        () => {
           fetchNews();
         }
       )
 
-      /* -----------------------------------------------
-         SUBSCRIBE
-      ----------------------------------------------- */
-
-      .subscribe((status) => {
-        console.log(
-          "AVR realtime status:",
-          status
-        );
-      });
-
-    /* ===================================================
-       CLEANUP
-    =================================================== */
+      .subscribe();
 
     return () => {
       mounted = false;
@@ -444,24 +295,38 @@ function Avr() {
     const handleEscape = (event) => {
       if (event.key === "Escape") {
         setMenuOpen(false);
+        setSelectedNews(null);
       }
     };
 
-    document.addEventListener(
-      "keydown",
-      handleEscape
-    );
+    document.addEventListener("keydown", handleEscape);
 
     return () => {
-      document.removeEventListener(
-        "keydown",
-        handleEscape
-      );
+      document.removeEventListener("keydown", handleEscape);
     };
   }, []);
 
   /* =====================================================
-     HELPERS
+     LOCK BODY WHEN NEWS MODAL IS OPEN
+  ===================================================== */
+
+  useEffect(() => {
+    if (selectedNews) {
+      document.body.style.overflow = "hidden";
+      document.documentElement.style.overflowX = "hidden";
+    } else {
+      document.body.style.overflow = "";
+      document.documentElement.style.overflowX = "";
+    }
+
+    return () => {
+      document.body.style.overflow = "";
+      document.documentElement.style.overflowX = "";
+    };
+  }, [selectedNews]);
+
+  /* =====================================================
+     FORMAT DATE
   ===================================================== */
 
   const formatDate = (date) => {
@@ -473,21 +338,21 @@ function Avr() {
       return String(date);
     }
 
-    return parsedDate.toLocaleDateString(
-      "en-US",
-      {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      }
-    );
+    return parsedDate.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
   };
+
+  /* =====================================================
+     FORMAT TIME
+  ===================================================== */
 
   const formatTime = (time) => {
     if (!time) return "";
 
     const value = String(time);
-
     const parts = value.split(":");
 
     if (parts.length < 2) {
@@ -508,6 +373,26 @@ function Avr() {
   };
 
   /* =====================================================
+     NEWS CAROUSEL
+  ===================================================== */
+
+  const nextNews = () => {
+    if (!news.length) return;
+
+    setNewsIndex((current) =>
+      current >= news.length - 1 ? 0 : current + 1
+    );
+  };
+
+  const previousNews = () => {
+    if (!news.length) return;
+
+    setNewsIndex((current) =>
+      current <= 0 ? news.length - 1 : current - 1
+    );
+  };
+
+  /* =====================================================
      RENDER
   ===================================================== */
 
@@ -522,21 +407,18 @@ function Avr() {
 
         <div className="container header-container">
 
-          {/* BRAND */}
-
           <a
             href="/"
             className="brand"
             onClick={closeMenu}
           >
-        <img
-          src="/hfalogo.png"
-          alt="Instructional Media Center Logo"
-          className="brand-logo"
-        />
+            <img
+              src="/hfalogo.png"
+              alt="Instructional Media Center Logo"
+              className="brand-logo"
+            />
 
             <div className="brand-text">
-
               <span className="brand-name">
                 Instructional Media Center
               </span>
@@ -544,18 +426,14 @@ function Avr() {
               <span className="brand-subtitle">
                 Library & Audio-Visual Room
               </span>
-
             </div>
           </a>
 
-          {/* DESKTOP NAVIGATION */}
+          {/* DESKTOP NAV */}
 
           <nav className="main-navigation">
 
-            <a
-              href="/"
-              onClick={closeMenu}
-            >
+            <a href="/" onClick={closeMenu}>
               Home
             </a>
 
@@ -573,8 +451,6 @@ function Avr() {
               Announcements
             </a>
 
-            {/* SERVICES */}
-
             <div className="nav-dropdown">
 
               <button
@@ -582,7 +458,6 @@ function Avr() {
                 className="nav-dropdown-button"
               >
                 Services
-
                 <span className="dropdown-arrow">
                   ▾
                 </span>
@@ -630,10 +505,7 @@ function Avr() {
                 </a>
 
               </div>
-
             </div>
-
-            {/* FACILITIES */}
 
             <a
               href="/#facilities"
@@ -642,16 +514,12 @@ function Avr() {
               Facilities
             </a>
 
-            {/* ABOUT */}
-
             <a
               href="/#about"
               onClick={closeMenu}
             >
               About
             </a>
-
-            {/* QUICK LINKS */}
 
             <div className="nav-dropdown quick-links-dropdown">
 
@@ -660,7 +528,6 @@ function Avr() {
                 className="nav-dropdown-button"
               >
                 Quick Links
-
                 <span className="dropdown-arrow">
                   ▾
                 </span>
@@ -708,10 +575,7 @@ function Avr() {
                 </a>
 
               </div>
-
             </div>
-
-            {/* STAFF */}
 
             <a
               href="/staff"
@@ -721,8 +585,6 @@ function Avr() {
             </a>
 
           </nav>
-
-          {/* HEADER ACTIONS */}
 
           <div className="header-actions">
 
@@ -755,7 +617,7 @@ function Avr() {
 
         </div>
 
-        {/* MOBILE NAVIGATION */}
+        {/* MOBILE NAV */}
 
         <nav
           className={`mobile-navigation ${
@@ -765,10 +627,7 @@ function Avr() {
           }`}
         >
 
-          <a
-            href="/"
-            onClick={closeMenu}
-          >
+          <a href="/" onClick={closeMenu}>
             Home
           </a>
 
@@ -794,24 +653,24 @@ function Avr() {
 
             <a
               href="/library"
-              onClick={closeMenu}
               className="mobile-sub-link"
+              onClick={closeMenu}
             >
               Library
             </a>
 
             <a
               href="/avr"
-              onClick={closeMenu}
               className="mobile-sub-link active"
+              onClick={closeMenu}
             >
               AVR
             </a>
 
             <a
               href="/services"
-              onClick={closeMenu}
               className="mobile-sub-link"
+              onClick={closeMenu}
             >
               Technical Assistance
             </a>
@@ -847,7 +706,7 @@ function Avr() {
             </a>
 
             <a
-              href="https://hfa-library.follettdestiny.com/portal/portal?app=Library%20Manager&appId=destiny-DFXG-DKVF&siteGuid=6FCE2EC2-064B-4961-BE56-2AF87CAD9632&nav=%252Fcataloging%252Fservlet%252Fpresentadvancedsearchredirectorform.do%253Fl2m%253DLibrary%252520Search%2526tm%253DTopLevelCatalog%2526l2m%253DLibrary%252BSearch"
+              href="https://hfa-library.follettdestiny.com/portal/portal?app=Library%20Manager&appId=destiny-DFXG-DKVF&siteGuid=6FCE2EC2-064B-4961-BE56-2AF87CAD9632&nav=%252Fcataloging%252Fservlet%2Fpresentadvancedsearchredirectorform.do%253Fl2m%253DLibrary%252520Search%2526tm%253DTopLevelCatalog%2526l2m%253DLibrary%252BSearch"
               className="mobile-sub-link"
               onClick={closeMenu}
             >
@@ -883,9 +742,9 @@ function Avr() {
 
       </header>
 
-      {/* =====================================================
+      {/* =================================================
           PAGE INDICATOR
-      ===================================================== */}
+      ================================================= */}
 
       <div className="avr-page-indicator">
 
@@ -903,15 +762,13 @@ function Avr() {
 
       </div>
 
-      {/* =====================================================
+      {/* =================================================
           MAIN
-      ===================================================== */}
+      ================================================= */}
 
       <main>
 
-        {/* =================================================
-            HERO
-        ================================================= */}
+        {/* HERO */}
 
         <section className="avr-hero">
 
@@ -925,7 +782,6 @@ function Avr() {
 
               <h1>
                 Audio-Visual
-
                 <span>
                   Room & Services.
                 </span>
@@ -959,7 +815,7 @@ function Avr() {
 
             </div>
 
-            {/* OPERATING HOURS */}
+            {/* HOURS */}
 
             <aside
               className="avr-hero-hours"
@@ -1000,21 +856,13 @@ function Avr() {
                         </strong>
 
                         <span>
-                          {schedule.is_closed ? (
-                            "Closed"
-                          ) : (
-                            <>
-                              {formatTime(
+                          {schedule.is_closed
+                            ? "Closed"
+                            : `${formatTime(
                                 schedule.opening_time
-                              )}
-
-                              {" — "}
-
-                              {formatTime(
+                              )} — ${formatTime(
                                 schedule.closing_time
-                              )}
-                            </>
-                          )}
+                              )}`}
                         </span>
 
                       </div>
@@ -1026,7 +874,8 @@ function Avr() {
               ) : (
 
                 <div className="avr-hours-empty">
-                  Operating hours have not been posted yet.
+                  Operating hours have not
+                  been posted yet.
                 </div>
 
               )}
@@ -1037,9 +886,15 @@ function Avr() {
 
         </section>
 
-        {/* =================================================
-            MARQUEE
-        ================================================= */}
+        {/* DARK BLUE SEPARATOR */}
+
+        <div className="avr-dark-separator">
+          <span></span>
+          <strong>AVR SERVICES</strong>
+          <span></span>
+        </div>
+
+        {/* MARQUEE */}
 
         <div className="avr-marquee">
 
@@ -1093,18 +948,12 @@ function Avr() {
 
             <i>✦</i>
 
-            <span>
-              MEDIA EQUIPMENT
-            </span>
-
-            <i>✦</i>
-
           </div>
 
         </div>
 
         {/* =================================================
-            AVR NEWS
+            LATEST NEWS CAROUSEL
         ================================================= */}
 
         <section
@@ -1123,75 +972,118 @@ function Avr() {
 
             {loading ? (
 
-              <LoadingState
-                text="Loading AVR news..."
-              />
+              <LoadingState text="Loading AVR news..." />
 
             ) : news.length > 0 ? (
 
-              <div className="avr-card-grid">
+              <div className="avr-news-carousel">
 
-                {news.map(
-                  (item) => (
-                    <article
-                      className="avr-news-card"
-                      key={item.id}
-                    >
+                <button
+                  type="button"
+                  className="avr-carousel-arrow avr-carousel-prev"
+                  onClick={previousNews}
+                  aria-label="Previous news"
+                >
+                  ‹
+                </button>
 
-                      {item.image_url ? (
+                <div className="avr-carousel-viewport">
 
-                        <div className="avr-card-image">
+                  <div
+                    className="avr-carousel-track"
+                    style={{
+                      transform: `translate3d(-${
+                        newsIndex * 100
+                      }%, 0, 0)`,
+                    }}
+                  >
 
-                          <img
-                            src={item.image_url}
-                            alt={
-                              item.title ||
-                              "AVR News"
-                            }
-                            loading="lazy"
-                          />
+                    {news.map((item) => (
 
-                        </div>
+                      <div
+                        className="avr-carousel-slide"
+                        key={item.id}
+                      >
 
-                      ) : (
+                        <article className="avr-news-feature">
 
-                        <div className="avr-card-image avr-no-image">
+                          {item.image_url ? (
 
-                          <span>
-                            AVR NEWS
-                          </span>
+                            <div className="avr-news-feature-image">
 
-                        </div>
+                              <img
+                                src={item.image_url}
+                                alt={
+                                  item.title ||
+                                  "AVR News"
+                                }
+                              />
 
-                      )}
+                            </div>
 
-                      <div className="avr-card-content">
+                          ) : (
 
-                        {item.published_date && (
-                          <span className="avr-content-date">
-                            {formatDate(
-                              item.published_date
+                            <div className="avr-news-feature-image avr-no-image">
+
+                              <span>
+                                AVR NEWS
+                              </span>
+
+                            </div>
+
+                          )}
+
+                          <div className="avr-news-feature-content">
+
+                            {item.published_date && (
+                              <span className="avr-content-date">
+                                {formatDate(
+                                  item.published_date
+                                )}
+                              </span>
                             )}
-                          </span>
-                        )}
 
-                        <h3>
-                          {item.title ||
-                            "AVR News"}
-                        </h3>
+                            <h3>
+                              {item.title ||
+                                "AVR News"}
+                            </h3>
 
-                        <p className="avr-card-text">
-                          {item.body ||
-                            "No description available."}
-                        </p>
+                            <p>
+                              {item.body ||
+                                "No description available."}
+                            </p>
 
-                        <ReadMore />
+                            <button
+                              type="button"
+                              className="avr-read-news"
+                              onClick={() =>
+                                setSelectedNews(item)
+                              }
+                            >
+                              Read News
+                              <span>→</span>
+                            </button>
+
+                          </div>
+
+                        </article>
 
                       </div>
 
-                    </article>
-                  )
-                )}
+                    ))}
+
+                  </div>
+
+                </div>
+
+                <button
+                  type="button"
+                  className="avr-carousel-arrow avr-carousel-next"
+                  onClick={nextNews}
+                  aria-label="Next news"
+                >
+                  ›
+                </button>
 
               </div>
 
@@ -1203,12 +1095,44 @@ function Avr() {
 
             )}
 
+            {news.length > 1 && (
+              <div className="avr-carousel-dots">
+
+                {news.map((item, index) => (
+
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={
+                      index === newsIndex
+                        ? "active"
+                        : ""
+                    }
+                    onClick={() =>
+                      setNewsIndex(index)
+                    }
+                    aria-label={`Go to news ${
+                      index + 1
+                    }`}
+                  />
+
+                ))}
+
+              </div>
+            )}
+
           </div>
 
         </section>
 
+        {/* DARK BLUE SECTION DIVIDER */}
+
+        <div className="avr-section-divider">
+          <div></div>
+        </div>
+
         {/* =================================================
-            INFORMATION & SERVICES
+            INFORMATION
         ================================================= */}
 
         <section
@@ -1280,12 +1204,10 @@ function Avr() {
                             "AVR Service"}
                         </h3>
 
-                        <p className="avr-card-text">
+                        <p>
                           {item.body ||
                             "No description available."}
                         </p>
-
-                        <ReadMore />
 
                       </div>
 
@@ -1308,7 +1230,7 @@ function Avr() {
         </section>
 
         {/* =================================================
-            QUICK ACCESS / SUPPORT
+            SUPPORT
         ================================================= */}
 
         <section
@@ -1346,9 +1268,8 @@ function Avr() {
                   <p>
                     Support for presentations,
                     lectures, demonstrations,
-                    and other instructional
-                    activities requiring
-                    audio-visual equipment.
+                    and instructional activities
+                    requiring audio-visual equipment.
                   </p>
 
                 </div>
@@ -1376,8 +1297,7 @@ function Avr() {
                     audio-visual equipment
                     and facilities designed
                     to support teaching,
-                    learning, and school
-                    activities.
+                    learning, and school activities.
                   </p>
 
                 </div>
@@ -1405,8 +1325,7 @@ function Avr() {
                     for school programs,
                     meetings, seminars,
                     presentations, and
-                    other institutional
-                    activities.
+                    institutional activities.
                   </p>
 
                 </div>
@@ -1437,49 +1356,53 @@ function Avr() {
               description="The Audio-Visual Room supports the school community through accessible facilities, media resources, and learning technologies."
             />
 
-            <div className="avr-purpose-grid">
+            <div className="avr-purpose-card">
 
-              {visionMission.image_url && (
-                <div
-                  className="avr-purpose-image"
-                >
+              <div className="avr-purpose-image">
+
+                {visionMission.image_url ? (
+
                   <img
-                    src={
-                      visionMission.image_url
-                    }
+                    src={visionMission.image_url}
                     alt={
                       visionMission.title ||
                       "AVR Vision and Mission"
                     }
                   />
-                </div>
-              )}
 
-              <article className="avr-purpose-card">
+                ) : (
+
+                  <div className="avr-purpose-image-placeholder">
+                    <span>
+                      AVR
+                    </span>
+                  </div>
+
+                )}
+
+              </div>
+
+              <div className="avr-purpose-content">
 
                 <span className="avr-purpose-number">
                   01
                 </span>
 
-                <div>
+                <span className="avr-purpose-label">
+                  OUR VISION & MISSION
+                </span>
 
-                  <span className="avr-purpose-label">
-                    OUR VISION & MISSION
-                  </span>
+                <h3>
+                  {visionMission.title ||
+                    "Vision & Mission"}
+                </h3>
 
-                  <h3>
-                    {visionMission.title ||
-                      "Vision & Mission"}
-                  </h3>
+                <p>
+                  {visionMission.body ||
+                    "AVR Vision & Mission has not been posted yet."}
+                </p>
 
-                  <p>
-                    {visionMission.body ||
-                      "AVR Vision & Mission has not been posted yet."}
-                  </p>
-
-                </div>
-
-              </article>
+              </div>
 
             </div>
 
@@ -1489,9 +1412,9 @@ function Avr() {
 
       </main>
 
-      {/* =====================================================
-          ERROR / REFRESH
-      ===================================================== */}
+      {/* =================================================
+          ERROR
+      ================================================= */}
 
       {errorMessage && (
 
@@ -1512,9 +1435,82 @@ function Avr() {
 
       )}
 
-      {/* =====================================================
+      {/* =================================================
+          NEWS MODAL
+      ================================================= */}
+
+      {selectedNews && (
+
+        <div
+          className="avr-news-modal-overlay"
+          onClick={() =>
+            setSelectedNews(null)
+          }
+        >
+
+          <div
+            className="avr-news-modal"
+            onClick={(event) =>
+              event.stopPropagation()
+            }
+          >
+
+            <button
+              type="button"
+              className="avr-news-modal-close"
+              onClick={() =>
+                setSelectedNews(null)
+              }
+              aria-label="Close news"
+            >
+              ×
+            </button>
+
+            {selectedNews.image_url && (
+
+              <div className="avr-news-modal-image">
+
+                <img
+                  src={selectedNews.image_url}
+                  alt={
+                    selectedNews.title ||
+                    "AVR News"
+                  }
+                />
+
+              </div>
+
+            )}
+
+            <div className="avr-news-modal-content">
+
+              <span className="avr-content-date">
+                {formatDate(
+                  selectedNews.published_date
+                )}
+              </span>
+
+              <h2>
+                {selectedNews.title ||
+                  "AVR News"}
+              </h2>
+
+              <p>
+                {selectedNews.body ||
+                  "No description available."}
+              </p>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      )}
+
+      {/* =================================================
           FOOTER
-      ===================================================== */}
+      ================================================= */}
 
       <footer className="main-footer">
 
@@ -1528,10 +1524,9 @@ function Avr() {
 
             <p>
               Audio-visual facilities,
-              equipment, learning
-              technology, and technical
-              support for the school
-              community.
+              equipment, learning technology,
+              and technical support for the
+              school community.
             </p>
 
           </div>
@@ -1641,51 +1636,6 @@ function SectionHeading({
       )}
 
     </div>
-  );
-}
-
-
-/* =========================================================
-   READ MORE
-========================================================= */
-
-function ReadMore() {
-  const handleReadMore = (event) => {
-    const button =
-      event.currentTarget;
-
-    const cardContent =
-      button.closest(
-        ".avr-card-content, .avr-information-content"
-      );
-
-    if (!cardContent) return;
-
-    const text =
-      cardContent.querySelector(
-        ".avr-card-text"
-      );
-
-    if (!text) return;
-
-    const expanded =
-      text.classList.toggle(
-        "expanded"
-      );
-
-    button.textContent = expanded
-      ? "Read Less"
-      : "Read More";
-  };
-
-  return (
-    <button
-      type="button"
-      className="avr-read-more"
-      onClick={handleReadMore}
-    >
-      Read More
-    </button>
   );
 }
 

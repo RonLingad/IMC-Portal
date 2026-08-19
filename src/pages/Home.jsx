@@ -5,7 +5,9 @@ import "./Home.css";
 function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // ================= DATA STATES =================
+  // =====================================================
+  // DATA
+  // =====================================================
 
   const [activities, setActivities] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
@@ -21,7 +23,16 @@ function Home() {
 
   const [loading, setLoading] = useState(true);
 
-  // ================= MODAL =================
+  // =====================================================
+  // CAROUSEL STATES
+  // =====================================================
+
+  const [activityIndex, setActivityIndex] = useState(0);
+  const [facilityIndex, setFacilityIndex] = useState(0);
+
+  // =====================================================
+  // MODAL
+  // =====================================================
 
   const [selectedContent, setSelectedContent] = useState(null);
 
@@ -36,17 +47,17 @@ function Home() {
     setSelectedContent(null);
   };
 
-  // ================= MOBILE MENU =================
+  // =====================================================
+  // MOBILE MENU
+  // =====================================================
 
   const closeMenu = () => {
     setMenuOpen(false);
   };
 
-  // ================= QUICK LINKS =================
-  //
-  // You can replace the "#" with the actual links later.
-  //
-// ================= QUICK LINKS =================
+  // =====================================================
+  // QUICK LINKS
+  // =====================================================
 
   const quickLinks = [
     {
@@ -66,7 +77,9 @@ function Home() {
     },
   ];
 
-  // ================= SERVICES =================
+  // =====================================================
+  // SERVICES
+  // =====================================================
 
   const services = [
     {
@@ -86,7 +99,9 @@ function Home() {
     },
   ];
 
-  // ================= FETCH ACTIVITIES =================
+  // =====================================================
+  // FETCH ACTIVITIES
+  // =====================================================
 
   const fetchActivities = async () => {
     const { data, error } = await supabase
@@ -102,7 +117,9 @@ function Home() {
     setActivities(data || []);
   };
 
-  // ================= FETCH ANNOUNCEMENTS =================
+  // =====================================================
+  // FETCH ANNOUNCEMENTS
+  // =====================================================
 
   const fetchAnnouncements = async () => {
     const { data, error } = await supabase
@@ -115,12 +132,12 @@ function Home() {
       return;
     }
 
-    console.log("Announcements loaded:", data);
-
     setAnnouncements(data || []);
   };
 
-  // ================= FETCH FACILITIES =================
+  // =====================================================
+  // FETCH FACILITIES
+  // =====================================================
 
   const fetchFacilities = async () => {
     const { data, error } = await supabase
@@ -136,7 +153,9 @@ function Home() {
     setFacilities(data || []);
   };
 
-  // ================= FETCH VISION & MISSION =================
+  // =====================================================
+  // FETCH VISION & MISSION
+  // =====================================================
 
   const fetchVisionMission = async () => {
     const { data, error } = await supabase
@@ -154,7 +173,9 @@ function Home() {
     }
   };
 
-  // ================= FETCH ALL HOME DATA =================
+  // =====================================================
+  // FETCH ALL
+  // =====================================================
 
   const fetchHomeData = async () => {
     setLoading(true);
@@ -173,7 +194,9 @@ function Home() {
     }
   };
 
-  // ================= INITIAL LOAD + REALTIME =================
+  // =====================================================
+  // INITIAL LOAD + REALTIME
+  // =====================================================
 
   useEffect(() => {
     fetchHomeData();
@@ -181,7 +204,6 @@ function Home() {
     const channel = supabase
       .channel("home-realtime-changes")
 
-      // ACTIVITIES
       .on(
         "postgres_changes",
         {
@@ -194,7 +216,6 @@ function Home() {
         }
       )
 
-      // ANNOUNCEMENTS
       .on(
         "postgres_changes",
         {
@@ -207,7 +228,6 @@ function Home() {
         }
       )
 
-      // FACILITIES
       .on(
         "postgres_changes",
         {
@@ -220,7 +240,6 @@ function Home() {
         }
       )
 
-      // VISION & MISSION
       .on(
         "postgres_changes",
         {
@@ -242,15 +261,48 @@ function Home() {
     };
   }, []);
 
-  // ================= ESCAPE KEY =================
+  // =====================================================
+  // ACTIVITY AUTO SLIDE
+  // EVERY 4 SECONDS
+  // =====================================================
+
+  useEffect(() => {
+    if (activities.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setActivityIndex((previous) => {
+        return (previous + 1) % activities.length;
+      });
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [activities.length]);
+
+  // =====================================================
+  // FACILITY AUTO SLIDE
+  // EVERY 4 SECONDS
+  // =====================================================
+
+  useEffect(() => {
+    if (facilities.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setFacilityIndex((previous) => {
+        return (previous + 1) % facilities.length;
+      });
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [facilities.length]);
+
+  // =====================================================
+  // ESCAPE
+  // =====================================================
 
   useEffect(() => {
     const handleEscape = (event) => {
       if (event.key === "Escape") {
         closeModal();
-      }
-
-      if (event.key === "Escape") {
         setMenuOpen(false);
       }
     };
@@ -262,7 +314,9 @@ function Home() {
     };
   }, []);
 
-  // ================= TEXT HELPERS =================
+  // =====================================================
+  // TEXT HELPERS
+  // =====================================================
 
   const MAX_DESCRIPTION_LENGTH = 190;
 
@@ -279,25 +333,79 @@ function Home() {
       return text;
     }
 
-    return (
-      text.substring(0, MAX_DESCRIPTION_LENGTH).trimEnd() + "..."
+    return text.substring(0, MAX_DESCRIPTION_LENGTH).trimEnd() + "...";
+  };
+
+  // =====================================================
+  // ACTIVITY NAVIGATION
+  // =====================================================
+
+  const nextActivity = () => {
+    if (activities.length === 0) return;
+
+    setActivityIndex(
+      (previous) => (previous + 1) % activities.length
     );
   };
 
-  // ================= RENDER =================
+  const previousActivity = () => {
+    if (activities.length === 0) return;
+
+    setActivityIndex(
+      (previous) =>
+        (previous - 1 + activities.length) % activities.length
+    );
+  };
+
+  // =====================================================
+  // FACILITY NAVIGATION
+  // =====================================================
+
+  const nextFacility = () => {
+    if (facilities.length === 0) return;
+
+    setFacilityIndex(
+      (previous) => (previous + 1) % facilities.length
+    );
+  };
+
+  const previousFacility = () => {
+    if (facilities.length === 0) return;
+
+    setFacilityIndex(
+      (previous) =>
+        (previous - 1 + facilities.length) % facilities.length
+    );
+  };
+
+  // =====================================================
+  // CURRENT DATA
+  // =====================================================
+
+  const currentActivity =
+    activities.length > 0
+      ? activities[activityIndex]
+      : null;
+
+  const currentFacility =
+    facilities.length > 0
+      ? facilities[facilityIndex]
+      : null;
+
+  // =====================================================
+  // RENDER
+  // =====================================================
 
   return (
     <div className="imc-home">
 
-      {/* =====================================================
+      {/* =================================================
           HEADER
-      ===================================================== */}
+      ================================================= */}
 
       <header className="main-header">
 
         <div className="container header-container">
-
-          {/* BRAND */}
 
           <a
             href="#home"
@@ -305,11 +413,11 @@ function Home() {
             onClick={closeMenu}
           >
 
-        <img
-          src="/hfalogo.png"
-          alt="Instructional Media Center Logo"
-          className="brand-logo"
-        />
+            <img
+              src="/hfalogo.png"
+              alt="Instructional Media Center Logo"
+              className="brand-logo"
+            />
 
             <div className="brand-text">
 
@@ -325,40 +433,21 @@ function Home() {
 
           </a>
 
-
-          {/* =================================================
-              DESKTOP NAVIGATION
-          ================================================= */}
+          {/* DESKTOP NAV */}
 
           <nav className="main-navigation">
 
-            <a
-              href="#home"
-              onClick={closeMenu}
-            >
+            <a href="#home" onClick={closeMenu}>
               Home
             </a>
 
-
-            <a
-              href="#activities"
-              onClick={closeMenu}
-            >
+            <a href="#activities" onClick={closeMenu}>
               Activities
             </a>
 
-
-            <a
-              href="#announcements"
-              onClick={closeMenu}
-            >
+            <a href="#announcements" onClick={closeMenu}>
               Announcements
             </a>
-
-
-            {/* ===============================================
-                SERVICES DROPDOWN
-            =============================================== */}
 
             <div className="nav-dropdown">
 
@@ -371,7 +460,6 @@ function Home() {
                   ▾
                 </span>
               </button>
-
 
               <div className="nav-dropdown-menu">
 
@@ -399,26 +487,13 @@ function Home() {
 
             </div>
 
-
-            <a
-              href="#facilities"
-              onClick={closeMenu}
-            >
+            <a href="#facilities" onClick={closeMenu}>
               Facilities
             </a>
 
-
-            <a
-              href="#about"
-              onClick={closeMenu}
-            >
+            <a href="#about" onClick={closeMenu}>
               About
             </a>
-
-
-            {/* ===============================================
-                QUICK LINKS DROPDOWN
-            =============================================== */}
 
             <div className="nav-dropdown quick-links-dropdown">
 
@@ -431,7 +506,6 @@ function Home() {
                   ▾
                 </span>
               </button>
-
 
               <div className="nav-dropdown-menu">
 
@@ -465,20 +539,13 @@ function Home() {
 
             </div>
 
-
-            <a
-              href="/staff"
-              onClick={closeMenu}
-            >
+            <a href="/staff" onClick={closeMenu}>
               Staff
             </a>
 
           </nav>
 
-
-          {/* =================================================
-              HEADER ACTIONS
-          ================================================= */}
+          {/* HEADER ACTIONS */}
 
           <div className="header-actions">
 
@@ -489,7 +556,6 @@ function Home() {
               Login
             </a>
 
-
             <button
               type="button"
               className={`burger-button ${
@@ -499,21 +565,16 @@ function Home() {
               aria-label="Toggle navigation menu"
               aria-expanded={menuOpen}
             >
-
               <span></span>
               <span></span>
               <span></span>
-
             </button>
 
           </div>
 
         </div>
 
-
-        {/* =================================================
-            MOBILE NAVIGATION
-        ================================================= */}
+        {/* MOBILE NAV */}
 
         <nav
           className={`mobile-navigation ${
@@ -523,31 +584,17 @@ function Home() {
           }`}
         >
 
-          <a
-            href="#home"
-            onClick={closeMenu}
-          >
+          <a href="#home" onClick={closeMenu}>
             Home
           </a>
 
-
-          <a
-            href="#activities"
-            onClick={closeMenu}
-          >
+          <a href="#activities" onClick={closeMenu}>
             Activities
           </a>
 
-
-          <a
-            href="#announcements"
-            onClick={closeMenu}
-          >
+          <a href="#announcements" onClick={closeMenu}>
             Announcements
           </a>
-
-
-          {/* MOBILE SERVICES */}
 
           <div className="mobile-nav-group">
 
@@ -570,24 +617,13 @@ function Home() {
 
           </div>
 
-
-          <a
-            href="#facilities"
-            onClick={closeMenu}
-          >
+          <a href="#facilities" onClick={closeMenu}>
             Facilities
           </a>
 
-
-          <a
-            href="#about"
-            onClick={closeMenu}
-          >
+          <a href="#about" onClick={closeMenu}>
             About
           </a>
-
-
-          {/* MOBILE QUICK LINKS */}
 
           <div className="mobile-nav-group">
 
@@ -616,14 +652,9 @@ function Home() {
 
           </div>
 
-
-          <a
-            href="/staff"
-            onClick={closeMenu}
-          >
+          <a href="/staff" onClick={closeMenu}>
             Staff
           </a>
-
 
           <a
             href="/login"
@@ -637,16 +668,15 @@ function Home() {
 
       </header>
 
-
-      {/* =====================================================
+      {/* =================================================
           MAIN
-      ===================================================== */}
+      ================================================= */}
 
       <main>
 
-        {/* =====================================================
+        {/* =================================================
             HERO
-        ===================================================== */}
+        ================================================= */}
 
         <section
           className="hero-section"
@@ -654,9 +684,7 @@ function Home() {
         >
 
           <div className="hero-background-shape hero-shape-one"></div>
-
           <div className="hero-background-shape hero-shape-two"></div>
-
 
           <div className="container hero-container">
 
@@ -666,14 +694,12 @@ function Home() {
                 INSTRUCTIONAL MEDIA CENTER
               </span>
 
-
               <h1>
                 Learning, Research,
                 <span>
                   and Innovation.
                 </span>
               </h1>
-
 
               <p>
                 Welcome to the Instructional Media Center,
@@ -683,7 +709,6 @@ function Home() {
                 technology, resources, and media services.
               </p>
 
-
               <div className="hero-actions">
 
                 <a
@@ -692,7 +717,6 @@ function Home() {
                 >
                   Explore Our Facilities
                 </a>
-
 
                 <a
                   href="#services"
@@ -705,19 +729,12 @@ function Home() {
 
             </div>
 
-
-            {/* HERO INFORMATION CARD */}
-
             <div className="hero-info-card">
 
               <div className="hero-card-header">
-
                 <span className="hero-card-dot"></span>
-
                 IMC SERVICES
-
               </div>
-
 
               <div className="hero-card-item">
 
@@ -731,7 +748,6 @@ function Home() {
 
               </div>
 
-
               <div className="hero-card-item">
 
                 <strong>
@@ -743,7 +759,6 @@ function Home() {
                 </span>
 
               </div>
-
 
               <div className="hero-card-item">
 
@@ -764,9 +779,9 @@ function Home() {
         </section>
 
 
-        {/* =====================================================
-            ACTIVITIES
-        ===================================================== */}
+        {/* =================================================
+            LATEST NEWS
+        ================================================= */}
 
         <section
           className="activities-section"
@@ -775,120 +790,163 @@ function Home() {
 
           <div className="container">
 
-            <div className="section-heading centered">
+            {/* COMPACT HEADING */}
 
-              <span className="section-label">
-                LATEST UPDATES
-              </span>
+            <div className="latest-heading">
 
+              <div className="latest-heading-left">
 
-              <h2>
-                Activities &
-                <span>
-                  Campus News.
+                <span className="section-label">
+                  LATEST UPDATES
                 </span>
-              </h2>
 
+                <h2>
+                  Latest <span>News.</span>
+                </h2>
+
+              </div>
 
               <p>
-                Stay updated with the latest events,
-                programs, and activities from the
-                Instructional Media Center.
+                Stay updated with the latest library
+                announcements, events, and activities.
               </p>
 
             </div>
 
 
+            {/* CAROUSEL */}
+
             {loading ? (
 
               <div className="content-loading">
-                Loading activities...
+                Loading latest news...
               </div>
 
-            ) : activities.length > 0 ? (
+            ) : currentActivity ? (
 
-              <div className="activities-grid">
+              <div className="latest-carousel">
 
-                {activities.map((activity) => (
-
-                  <article
-                    className="activity-card"
-                    key={activity.id}
-                  >
-
-                    {activity.image && (
-
-                      <div className="activity-image-wrapper">
-
-                        <img
-                          src={activity.image}
-                          alt={activity.title}
-                          className="activity-image"
-                        />
-
-                      </div>
-
-                    )}
+                <button
+                  type="button"
+                  className="carousel-arrow carousel-arrow-left"
+                  onClick={previousActivity}
+                  aria-label="Previous activity"
+                >
+                  ←
+                </button>
 
 
-                    <div className="activity-content">
+                <article
+                  className="latest-news-card"
+                  key={currentActivity.id}
+                >
 
-                      {activity.date && (
+                  {/* IMAGE */}
 
-                        <span className="activity-date">
-                          {activity.date}
-                        </span>
+                  {currentActivity.image && (
 
-                      )}
+                    <div className="latest-news-image">
 
-
-                      <h3>
-                        {activity.title}
-                      </h3>
-
-
-                      <p>
-                        {getShortDescription(
-                          activity.description
-                        )}
-                      </p>
-
-
-                      {isLongText(
-                        activity.description
-                      ) && (
-
-                        <button
-                          type="button"
-                          className="read-more-button"
-                          onClick={() =>
-                            openModal(
-                              "activity",
-                              activity
-                            )
-                          }
-                        >
-                          Read More
-                          <span></span>
-                        </button>
-
-                      )}
+                      <img
+                        src={currentActivity.image}
+                        alt={currentActivity.title}
+                      />
 
                     </div>
 
-                  </article>
+                  )}
 
-                ))}
+
+                  {/* CONTENT */}
+
+                  <div className="latest-news-content">
+
+                    <div className="latest-news-meta">
+
+                      {currentActivity.date && (
+                        <span>
+                          {currentActivity.date}
+                        </span>
+                      )}
+
+                      <span className="latest-news-label">
+                        IMC NEWS
+                      </span>
+
+                    </div>
+
+
+                    <h3>
+                      {currentActivity.title}
+                    </h3>
+
+
+                    <button
+                      type="button"
+                      className="blue-read-button"
+                      onClick={() =>
+                        openModal(
+                          "activity",
+                          currentActivity
+                        )
+                      }
+                    >
+                      Read More
+                      <span>→</span>
+                    </button>
+
+                  </div>
+
+                </article>
+
+
+                <button
+                  type="button"
+                  className="carousel-arrow carousel-arrow-right"
+                  onClick={nextActivity}
+                  aria-label="Next activity"
+                >
+                  →
+                </button>
 
               </div>
 
             ) : (
 
-              <div className="empty-content">
-
+              <div className="empty-content dark-empty">
                 <p>
                   No activities posted yet.
                 </p>
+              </div>
+
+            )}
+
+
+            {/* CAROUSEL INDICATORS */}
+
+            {activities.length > 1 && (
+
+              <div className="carousel-indicators">
+
+                {activities.map((activity, index) => (
+
+                  <button
+                    key={activity.id}
+                    type="button"
+                    className={
+                      index === activityIndex
+                        ? "active"
+                        : ""
+                    }
+                    onClick={() =>
+                      setActivityIndex(index)
+                    }
+                    aria-label={`Go to activity ${
+                      index + 1
+                    }`}
+                  />
+
+                ))}
 
               </div>
 
@@ -899,9 +957,9 @@ function Home() {
         </section>
 
 
-        {/* =====================================================
+        {/* =================================================
             ANNOUNCEMENTS
-        ===================================================== */}
+        ================================================= */}
 
         <section
           className="announcement-section"
@@ -910,29 +968,72 @@ function Home() {
 
           <div className="container">
 
-            <div className="section-heading centered">
+            <div className="announcement-heading">
 
-              <span className="section-label">
-                CENTER ADVISORIES
-              </span>
+              <div>
 
-
-              <h2>
-                Official
-                <span>
-                  Announcements.
+                <span className="section-label">
+                  CENTER ADVISORIES
                 </span>
-              </h2>
 
+                <h2>
+                  Official <span>Announcements.</span>
+                </h2>
+
+              </div>
 
               <p>
-                Important notices, schedule updates,
-                and advisories from the Instructional
+                Important notices, schedules, and
+                advisories from the Instructional
                 Media Center.
               </p>
 
             </div>
 
+
+            {/* MARQUEE */}
+
+            {announcements.length > 0 && (
+
+              <div className="announcement-marquee">
+
+                <div className="announcement-marquee-track">
+
+                  {[...announcements, ...announcements].map(
+                    (item, index) => (
+
+                      <div
+                        className="marquee-item"
+                        key={`${item.id}-${index}`}
+                      >
+
+                        <span className="marquee-dot">
+                          ●
+                        </span>
+
+                        <strong>
+                          {item.title}
+                        </strong>
+
+                        {item.date && (
+                          <span>
+                            {item.date}
+                          </span>
+                        )}
+
+                      </div>
+
+                    )
+                  )}
+
+                </div>
+
+              </div>
+
+            )}
+
+
+            {/* ANNOUNCEMENT LIST */}
 
             {loading ? (
 
@@ -942,77 +1043,59 @@ function Home() {
 
             ) : announcements.length > 0 ? (
 
-              <div className="announcements-news-grid">
+              <div className="announcement-list">
 
-                {announcements.map((item) => (
+                {announcements.slice(0, 4).map((item) => (
 
                   <article
-                    className="announcement-news-card"
+                    className="announcement-row"
                     key={item.id}
                   >
 
-                    <div className="announcement-news-header-bar">
+                    <div className="announcement-row-date">
 
-                      <span className="announcement-badge">
-                        {item.badge || "ADVISORY"}
-                      </span>
-
-
-                      {item.date && (
-
-                        <span className="announcement-date-text">
-                          {item.date}
-                        </span>
-
-                      )}
+                      {item.date || "NOTICE"}
 
                     </div>
 
 
-                    <div className="announcement-news-body">
+                    <div className="announcement-row-content">
 
-                      {item.tag && (
+                      <div className="announcement-row-top">
 
-                        <span className="announcement-tag">
-                          {item.tag}
+                        <span>
+                          {item.badge || "ADVISORY"}
                         </span>
 
-                      )}
+                        {item.tag && (
+                          <small>
+                            {item.tag}
+                          </small>
+                        )}
+
+                      </div>
 
 
                       <h3>
                         {item.title}
                       </h3>
 
-
-                      <p>
-                        {getShortDescription(
-                          item.description
-                        )}
-                      </p>
-
-
-                      {isLongText(
-                        item.description
-                      ) && (
-
-                        <button
-                          type="button"
-                          className="read-more-button"
-                          onClick={() =>
-                            openModal(
-                              "announcement",
-                              item
-                            )
-                          }
-                        >
-                          Read More
-                          <span></span>
-                        </button>
-
-                      )}
-
                     </div>
+
+
+                    <button
+                      type="button"
+                      className="announcement-read-button"
+                      onClick={() =>
+                        openModal(
+                          "announcement",
+                          item
+                        )
+                      }
+                    >
+                      Read More
+                      <span>→</span>
+                    </button>
 
                   </article>
 
@@ -1023,11 +1106,9 @@ function Home() {
             ) : (
 
               <div className="empty-content">
-
                 <p>
                   No announcements posted yet.
                 </p>
-
               </div>
 
             )}
@@ -1037,9 +1118,9 @@ function Home() {
         </section>
 
 
-        {/* =====================================================
+        {/* =================================================
             SERVICES
-        ===================================================== */}
+        ================================================= */}
 
         <section
           className="services-section"
@@ -1054,14 +1135,12 @@ function Home() {
                 WHAT WE OFFER
               </span>
 
-
               <h2>
                 Services for the
                 <span>
                   school community.
                 </span>
               </h2>
-
 
               <p>
                 Access the services and facilities
@@ -1081,11 +1160,9 @@ function Home() {
                   LIB
                 </div>
 
-
                 <h3>
                   Library Services
                 </h3>
-
 
                 <p>
                   Access books, research areas,
@@ -1093,9 +1170,12 @@ function Home() {
                   other library resources.
                 </p>
 
-
-                <a href="/library">
-                  Visit Library 
+                <a
+                  href="/library"
+                  className="service-button"
+                >
+                  Visit Library
+                  <span></span>
                 </a>
 
               </article>
@@ -1109,11 +1189,9 @@ function Home() {
                   AVR
                 </div>
 
-
                 <h3>
                   AVR Services
                 </h3>
-
 
                 <p>
                   Request audio-visual equipment,
@@ -1121,9 +1199,12 @@ function Home() {
                   videography, and AVR facilities.
                 </p>
 
-
-                <a href="/avr">
-                  Visit AVR 
+                <a
+                  href="/avr"
+                  className="service-button"
+                >
+                  Visit AVR
+                  <span></span>
                 </a>
 
               </article>
@@ -1137,11 +1218,9 @@ function Home() {
                   IT
                 </div>
 
-
                 <h3>
                   Technical Assistance
                 </h3>
-
 
                 <p>
                   Request assistance for computer-related
@@ -1149,9 +1228,12 @@ function Home() {
                   technical needs.
                 </p>
 
-
-                <a href="/services">
-                  Request Assistance 
+                <a
+                  href="/services"
+                  className="service-button"
+                >
+                  Request Assistance
+                  <span></span>
                 </a>
 
               </article>
@@ -1163,9 +1245,9 @@ function Home() {
         </section>
 
 
-        {/* =====================================================
-            QUICK LINKS SECTION
-        ===================================================== */}
+        {/* =================================================
+            QUICK LINKS
+        ================================================= */}
 
         <section
           className="quick-links-section"
@@ -1180,14 +1262,12 @@ function Home() {
                 DIGITAL RESOURCES
               </span>
 
-
               <h2>
                 Quick
                 <span>
                   Links.
                 </span>
               </h2>
-
 
               <p>
                 Quickly access digital learning,
@@ -1221,7 +1301,6 @@ function Home() {
                     ↗
                   </div>
 
-
                   <div>
 
                     <h3>
@@ -1245,9 +1324,9 @@ function Home() {
         </section>
 
 
-        {/* =====================================================
+        {/* =================================================
             FACILITIES
-        ===================================================== */}
+        ================================================= */}
 
         <section
           className="facilities-section"
@@ -1256,24 +1335,27 @@ function Home() {
 
           <div className="container">
 
-            <div className="section-heading centered">
+            <div className="facility-heading">
 
-              <span className="section-label">
-                OUR FACILITIES
-              </span>
+              <div>
 
-
-              <h2>
-                Spaces designed for
-                <span>
-                  learning.
+                <span className="section-label">
+                  OUR FACILITIES
                 </span>
-              </h2>
 
+                <h2>
+                  Spaces designed for
+                  <span>
+                    learning.
+                  </span>
+                </h2>
+
+              </div>
 
               <p>
-                Explore the different areas available
-                within the Instructional Media Center.
+                Explore the different learning spaces
+                available within the Instructional
+                Media Center.
               </p>
 
             </div>
@@ -1285,58 +1367,121 @@ function Home() {
                 Loading facilities...
               </div>
 
-            ) : facilities.length > 0 ? (
+            ) : currentFacility ? (
 
-              <div className="facility-grid">
+              <div className="facility-slider">
 
-                {facilities.map((facility) => (
-
-                  <article
-                    className="facility-card"
-                    key={facility.id}
-                  >
-
-                    {facility.image && (
-
-                      <div className="facility-image-wrapper">
-
-                        <img
-                          src={facility.image}
-                          alt={facility.title}
-                          className="facility-image"
-                        />
-
-                      </div>
-
-                    )}
+                <button
+                  type="button"
+                  className="facility-arrow facility-arrow-left"
+                  onClick={previousFacility}
+                  aria-label="Previous facility"
+                >
+                  ↑
+                </button>
 
 
-                    <div className="facility-content">
+                <article
+                  className="simple-facility-card"
+                  key={currentFacility.id}
+                >
 
-                      <h3>
-                        {facility.title}
-                      </h3>
+                  {currentFacility.image && (
 
+                    <div className="simple-facility-image">
 
-                      <p>
-                        {facility.description}
-                      </p>
+                      <img
+                        src={currentFacility.image}
+                        alt={currentFacility.title}
+                      />
 
                     </div>
 
-                  </article>
+                  )}
 
-                ))}
+
+                  <div className="simple-facility-content">
+
+                    <span className="facility-number">
+                      {String(
+                        facilityIndex + 1
+                      ).padStart(2, "0")}
+                    </span>
+
+                    <h3>
+                      {currentFacility.title}
+                    </h3>
+
+                    <p>
+                      {getShortDescription(
+                        currentFacility.description
+                      )}
+                    </p>
+
+                    <button
+                      type="button"
+                      className="facility-read-button"
+                      onClick={() =>
+                        openModal(
+                          "facility",
+                          currentFacility
+                        )
+                      }
+                    >
+                      Read More
+                      <span>→</span>
+                    </button>
+
+                  </div>
+
+                </article>
+
+
+                <button
+                  type="button"
+                  className="facility-arrow facility-arrow-right"
+                  onClick={nextFacility}
+                  aria-label="Next facility"
+                >
+                  ↓
+                </button>
 
               </div>
 
             ) : (
 
               <div className="empty-content">
-
                 <p>
                   No facilities listed yet.
                 </p>
+              </div>
+
+            )}
+
+
+            {facilities.length > 1 && (
+
+              <div className="facility-indicators">
+
+                {facilities.map((facility, index) => (
+
+                  <button
+                    type="button"
+                    key={facility.id}
+                    className={
+                      index === facilityIndex
+                        ? "active"
+                        : ""
+                    }
+                    onClick={() =>
+                      setFacilityIndex(index)
+                    }
+                    aria-label={`Go to facility ${
+                      index + 1
+                    }`}
+                  />
+
+                ))}
 
               </div>
 
@@ -1347,9 +1492,9 @@ function Home() {
         </section>
 
 
-        {/* =====================================================
+        {/* =================================================
             VISION & MISSION
-        ===================================================== */}
+        ================================================= */}
 
         <section className="vision-section">
 
@@ -1361,14 +1506,12 @@ function Home() {
                 OUR PURPOSE
               </span>
 
-
               <h2>
                 Supporting the school
                 <span>
                   community.
                 </span>
               </h2>
-
 
               <p>
                 The IMC is committed to creating an
@@ -1387,11 +1530,9 @@ function Home() {
                   01
                 </div>
 
-
                 <h3>
                   Vision
                 </h3>
-
 
                 <p>
                   {visionMission.vision}
@@ -1406,11 +1547,9 @@ function Home() {
                   02
                 </div>
 
-
                 <h3>
                   Mission
                 </h3>
-
 
                 <p>
                   {visionMission.mission}
@@ -1425,9 +1564,9 @@ function Home() {
         </section>
 
 
-        {/* =====================================================
+        {/* =================================================
             ABOUT
-        ===================================================== */}
+        ================================================= */}
 
         <section
           className="intro-section"
@@ -1441,7 +1580,6 @@ function Home() {
               <span className="section-label">
                 ABOUT THE IMC
               </span>
-
 
               <h2>
                 A place where information
@@ -1461,7 +1599,6 @@ function Home() {
                 research, technology, and media services.
               </p>
 
-
               <p>
                 It supports students, teachers, and the
                 school community by providing accessible
@@ -1478,9 +1615,9 @@ function Home() {
       </main>
 
 
-      {/* =====================================================
+      {/* =================================================
           FOOTER
-      ===================================================== */}
+      ================================================= */}
 
       <footer
         className="main-footer"
@@ -1494,7 +1631,6 @@ function Home() {
             <h3>
               Instructional Media Center Staff
             </h3>
-
 
             <p>
               Dedicated personnel supporting learning
@@ -1513,21 +1649,17 @@ function Home() {
                 Explore
               </h4>
 
-
               <a href="#home">
                 Home
               </a>
-
 
               <a href="#activities">
                 Activities
               </a>
 
-
               <a href="#announcements">
                 Announcements
               </a>
-
 
               <a href="#services">
                 Services
@@ -1542,21 +1674,17 @@ function Home() {
                 Resources
               </h4>
 
-
               <a href="#facilities">
                 Facilities
               </a>
-
 
               <a href="#quick-links">
                 Quick Links
               </a>
 
-
               <a href="#about">
                 About IMC
               </a>
-
 
               <a href="/login">
                 Admin Login
@@ -1585,9 +1713,9 @@ function Home() {
       </footer>
 
 
-      {/* =====================================================
-          READ MORE MODAL
-      ===================================================== */}
+      {/* =================================================
+          MODAL
+      ================================================= */}
 
       {selectedContent && (
 
@@ -1612,8 +1740,6 @@ function Home() {
               ×
             </button>
 
-
-            {/* MODAL IMAGE */}
 
             {selectedContent.item.image && (
 
