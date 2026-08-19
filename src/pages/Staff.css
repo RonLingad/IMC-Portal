@@ -2,6 +2,10 @@
    STAFF PAGE
    Instructional Media Center
    Theme: Dark Blue / White / Gold
+
+   NOTE:
+   Header / Navigation layout is preserved.
+   Only the STAFF CONTENT layout has been refined.
 ========================================================= */
 
 * {
@@ -50,6 +54,7 @@ select {
 
 /* =========================================================
    HEADER
+   PRESERVED
 ========================================================= */
 
 .main-header {
@@ -517,20 +522,32 @@ select {
   position: relative;
 
   z-index: 1;
+
+  width: 100%;
 }
 
 
 /* =========================================================
    STAFF SECTION
-   REDUCED TOP MARGIN
+   REFINED LAYOUT
 ========================================================= */
 
 .staff-section {
-  padding: 35px 20px 95px;
+  width: 100%;
+
+  padding:
+    42px
+    20px
+    90px;
 }
 
+
+/* =========================================================
+   STAFF CONTAINER
+========================================================= */
+
 .staff-container {
-  width: min(1120px, 100%);
+  width: min(1080px, 100%);
 
   margin: 0 auto;
 
@@ -547,15 +564,14 @@ select {
   align-items: center;
   justify-content: center;
 
-  margin-top: 0;
-  margin-bottom: 10px;
+  margin: 0 0 9px;
 
   color: #d4b76a;
 
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 750;
 
-  letter-spacing: 1.8px;
+  letter-spacing: 1.9px;
 
   text-transform: uppercase;
 }
@@ -565,13 +581,13 @@ select {
 
   color: #ffffff;
 
-  font-size: clamp(32px, 5vw, 50px);
+  font-size: clamp(32px, 4.5vw, 48px);
 
   font-weight: 800;
 
-  line-height: 1.1;
+  line-height: 1.08;
 
-  letter-spacing: -1.5px;
+  letter-spacing: -1.4px;
 }
 
 .staff-title span {
@@ -579,13 +595,16 @@ select {
 }
 
 .staff-intro {
-  max-width: 650px;
+  width: min(650px, 100%);
 
-  margin: 14px auto 0;
+  margin:
+    13px
+    auto
+    0;
 
   color: rgba(255, 255, 255, 0.72);
 
-  font-size: 14px;
+  font-size: 13.5px;
 
   line-height: 1.7;
 }
@@ -593,25 +612,31 @@ select {
 
 /* =========================================================
    STAFF GRID
-   3 PER ROW
+   DESKTOP: 3 CARDS
 ========================================================= */
 
 .staff-grid {
   width: 100%;
 
-  margin-top: 45px;
+  margin:
+    38px
+    auto
+    0;
 
   display: grid;
 
   grid-template-columns:
     repeat(3, minmax(0, 1fr));
 
-  gap: 30px;
+  gap: 22px;
+
+  align-items: stretch;
 }
 
 
 /* =========================================================
    STAFF CARD
+   CLEANER / COMPACT
 ========================================================= */
 
 .staff-card {
@@ -619,16 +644,28 @@ select {
 
   min-width: 0;
 
-  padding: 34px 24px 30px;
+  min-height: 0;
+
+  padding:
+    27px
+    20px
+    24px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 
   background: #ffffff;
 
-  border: 1px solid rgba(212, 183, 106, 0.22);
+  border:
+    1px solid
+    rgba(212, 183, 106, 0.22);
 
-  border-radius: 16px;
+  border-radius: 13px;
 
   box-shadow:
-    0 15px 40px rgba(0, 0, 0, 0.18);
+    0 12px 32px
+    rgba(0, 0, 0, 0.16);
 
   text-align: center;
 
@@ -639,12 +676,14 @@ select {
 }
 
 .staff-card:hover {
-  transform: translateY(-6px);
+  transform: translateY(-5px);
 
-  border-color: rgba(185, 154, 82, 0.65);
+  border-color:
+    rgba(185, 154, 82, 0.65);
 
   box-shadow:
-    0 22px 48px rgba(0, 0, 0, 0.24);
+    0 18px 38px
+    rgba(0, 0, 0, 0.22);
 }
 
 
@@ -660,7 +699,7 @@ select {
   top: 0;
   left: 50%;
 
-  width: 70px;
+  width: 62px;
   height: 3px;
 
   transform: translateX(-50%);
@@ -685,10 +724,11 @@ select {
 .staff-image-wrapper {
   display: flex;
 
-  justify-content: center;
   align-items: center;
+  justify-content: center;
 
-  margin-bottom: 22px;
+  margin:
+    0 0 17px;
 }
 
 
@@ -699,10 +739,10 @@ select {
 .staff-image-ring {
   position: relative;
 
-  width: 190px;
-  height: 190px;
+  width: 155px;
+  height: 155px;
 
-  padding: 6px;
+  padding: 5px;
 
   display: flex;
 
@@ -722,7 +762,8 @@ select {
     );
 
   box-shadow:
-    0 12px 30px rgba(16, 42, 86, 0.20);
+    0 9px 24px
+    rgba(16, 42, 86, 0.18);
 
   transition:
     transform 0.3s ease,
@@ -734,11 +775,13 @@ select {
 
   position: absolute;
 
-  inset: -6px;
+  inset: -5px;
 
   border-radius: 50%;
 
-  border: 1px dashed rgba(185, 154, 82, 0.8);
+  border:
+    1px dashed
+    rgba(185, 154, 82, 0.8);
 
   pointer-events: none;
 }
@@ -752,7 +795,9 @@ select {
 
   border-radius: 50%;
 
-  border: 1px solid rgba(255, 255, 255, 0.75);
+  border:
+    1px solid
+    rgba(255, 255, 255, 0.75);
 
   pointer-events: none;
 }
@@ -761,7 +806,8 @@ select {
   transform: scale(1.025);
 
   box-shadow:
-    0 16px 38px rgba(16, 42, 86, 0.25);
+    0 13px 30px
+    rgba(16, 42, 86, 0.23);
 }
 
 
@@ -806,7 +852,7 @@ select {
 
   color: #a88638;
 
-  font-size: 45px;
+  font-size: 38px;
 }
 
 
@@ -815,11 +861,13 @@ select {
 ========================================================= */
 
 .staff-name {
+  width: 100%;
+
   margin: 0;
 
   color: #102a56;
 
-  font-size: 20px;
+  font-size: 17px;
 
   font-weight: 750;
 
@@ -834,10 +882,13 @@ select {
 ========================================================= */
 
 .staff-divider {
-  width: 48px;
+  width: 42px;
   height: 2px;
 
-  margin: 12px auto;
+  margin:
+    9px
+    auto
+    9px;
 
   background:
     linear-gradient(
@@ -856,17 +907,19 @@ select {
 ========================================================= */
 
 .staff-position {
+  width: 100%;
+
   margin: 0;
 
   color: #a88638;
 
-  font-size: 12px;
+  font-size: 10.5px;
 
   font-weight: 750;
 
   line-height: 1.5;
 
-  letter-spacing: 0.7px;
+  letter-spacing: 0.65px;
 
   text-transform: uppercase;
 }
@@ -878,27 +931,39 @@ select {
 
 .staff-loading,
 .staff-empty {
-  margin-top: 45px;
+  width: min(650px, 100%);
 
-  padding: 45px 20px;
+  margin:
+    38px
+    auto
+    0;
+
+  padding:
+    38px
+    20px;
 
   color: #ffffff;
 
   font-size: 14px;
 
-  background: rgba(255, 255, 255, 0.08);
+  background:
+    rgba(255, 255, 255, 0.08);
 
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border:
+    1px solid
+    rgba(255, 255, 255, 0.12);
 
-  border-radius: 14px;
+  border-radius: 12px;
 }
 
 
 /* =========================================================
-   RESPONSIVE — TABLET
+   TABLET
 ========================================================= */
 
 @media (max-width: 1050px) {
+
+  /* Header remains the same */
 
   .main-navigation {
     gap: 0;
@@ -919,18 +984,35 @@ select {
     padding-right: 13px;
   }
 
+
+  /* Staff */
+
+  .staff-section {
+    padding-top: 36px;
+  }
+
+  .staff-container {
+    width: min(920px, 100%);
+  }
+
   .staff-grid {
-    gap: 22px;
+    gap: 18px;
   }
 
   .staff-card {
-    padding-left: 18px;
-    padding-right: 18px;
+    padding:
+      25px
+      16px
+      22px;
   }
 
   .staff-image-ring {
-    width: 165px;
-    height: 165px;
+    width: 140px;
+    height: 140px;
+  }
+
+  .staff-name {
+    font-size: 16px;
   }
 
   .staff-background-logo {
@@ -941,7 +1023,8 @@ select {
 
 
 /* =========================================================
-   RESPONSIVE — MOBILE NAV
+   MOBILE NAV
+   HEADER NAVIGATION PRESERVED
 ========================================================= */
 
 @media (max-width: 950px) {
@@ -969,7 +1052,9 @@ select {
 
     background: #ffffff;
 
-    border-top: 0 solid #e7ebf2;
+    border-top:
+      0 solid
+      #e7ebf2;
 
     opacity: 0;
 
@@ -982,9 +1067,14 @@ select {
   .mobile-navigation-open {
     max-height: 850px;
 
-    padding: 12px 20px 20px;
+    padding:
+      12px
+      20px
+      20px;
 
-    border-top: 1px solid #e7ebf2;
+    border-top:
+      1px solid
+      #e7ebf2;
 
     opacity: 1;
   }
@@ -993,7 +1083,9 @@ select {
   .mobile-nav-heading {
     display: block;
 
-    padding: 11px 5px;
+    padding:
+      11px
+      5px;
 
     color: #263753;
 
@@ -1023,13 +1115,17 @@ select {
   .mobile-sub-link {
     display: block;
 
-    padding: 8px 12px;
+    padding:
+      8px
+      12px;
 
     color: #5e6879;
 
     font-size: 13px;
 
-    border-left: 2px solid #e3d3a9;
+    border-left:
+      2px solid
+      #e3d3a9;
   }
 
   .mobile-sub-link:hover {
@@ -1041,7 +1137,9 @@ select {
   .mobile-login-btn {
     margin-top: 8px;
 
-    padding: 12px 15px !important;
+    padding:
+      12px
+      15px !important;
 
     border-radius: 7px;
 
@@ -1052,28 +1150,44 @@ select {
     text-align: center;
   }
 
+
+  /* Staff */
+
   .staff-section {
-    padding-top: 30px;
-    padding-bottom: 75px;
+    padding:
+      32px
+      18px
+      70px;
   }
 
   .staff-grid {
     grid-template-columns:
       repeat(2, minmax(0, 1fr));
 
-    gap: 24px;
+    gap: 18px;
+
+    margin-top: 32px;
+  }
+
+  .staff-image-ring {
+    width: 145px;
+    height: 145px;
   }
 }
 
 
 /* =========================================================
-   RESPONSIVE — PHONE
+   PHONE
 ========================================================= */
 
 @media (max-width: 650px) {
 
   .container {
-    width: min(100% - 28px, 1180px);
+    width:
+      min(
+        calc(100% - 28px),
+        1180px
+      );
   }
 
   .brand-logo {
@@ -1089,12 +1203,22 @@ select {
     font-size: 9px;
   }
 
+
+  /* Staff */
+
   .staff-section {
-    padding: 28px 14px 65px;
+    padding:
+      28px
+      14px
+      62px;
   }
 
   .staff-label {
     margin-bottom: 8px;
+
+    font-size: 10px;
+
+    letter-spacing: 1.5px;
   }
 
   .staff-title {
@@ -1104,33 +1228,52 @@ select {
   }
 
   .staff-intro {
-    margin-top: 12px;
+    margin-top: 11px;
 
     font-size: 13px;
+
+    line-height: 1.65;
   }
 
   .staff-grid {
     grid-template-columns: 1fr;
 
-    max-width: 390px;
+    width: min(380px, 100%);
 
-    margin-left: auto;
-    margin-right: auto;
+    margin:
+      30px
+      auto
+      0;
 
-    gap: 24px;
+    gap: 18px;
   }
 
   .staff-card {
-    padding: 30px 20px 26px;
+    width: 100%;
+
+    padding:
+      27px
+      20px
+      24px;
+
+    border-radius: 12px;
+  }
+
+  .staff-image-wrapper {
+    margin-bottom: 16px;
   }
 
   .staff-image-ring {
-    width: 185px;
-    height: 185px;
+    width: 165px;
+    height: 165px;
   }
 
   .staff-name {
-    font-size: 21px;
+    font-size: 19px;
+  }
+
+  .staff-position {
+    font-size: 10.5px;
   }
 
   .staff-background-logo {
@@ -1143,7 +1286,7 @@ select {
 
 
 /* =========================================================
-   RESPONSIVE — VERY SMALL PHONES
+   VERY SMALL PHONES
 ========================================================= */
 
 @media (max-width: 450px) {
@@ -1152,29 +1295,50 @@ select {
     display: none;
   }
 
+
+  /* Staff */
+
   .staff-section {
-    padding-top: 25px;
+    padding:
+      25px
+      12px
+      55px;
   }
 
   .staff-title {
     font-size: 30px;
   }
 
+  .staff-intro {
+    font-size: 12.5px;
+  }
+
   .staff-grid {
-    max-width: 340px;
+    width: min(340px, 100%);
+
+    gap: 16px;
+
+    margin-top: 27px;
   }
 
   .staff-card {
-    padding: 28px 18px 24px;
+    padding:
+      25px
+      17px
+      22px;
   }
 
   .staff-image-ring {
-    width: 170px;
-    height: 170px;
+    width: 155px;
+    height: 155px;
   }
 
   .staff-name {
-    font-size: 19px;
+    font-size: 18px;
+  }
+
+  .staff-position {
+    font-size: 10px;
   }
 
   .staff-background-logo {
@@ -1185,12 +1349,77 @@ select {
 
 
 /* =========================================================
+   EXTRA SMALL DEVICES
+========================================================= */
+
+@media (max-width: 360px) {
+
+  .staff-section {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .staff-title {
+    font-size: 27px;
+  }
+
+  .staff-label {
+    font-size: 9px;
+
+    letter-spacing: 1.2px;
+  }
+
+  .staff-grid {
+    width: 100%;
+  }
+
+  .staff-card {
+    padding:
+      23px
+      15px
+      20px;
+  }
+
+  .staff-image-ring {
+    width: 145px;
+    height: 145px;
+  }
+
+  .staff-name {
+    font-size: 17px;
+  }
+}
+
+
+/* =========================================================
    ACCESSIBILITY
 ========================================================= */
 
 button:focus-visible,
 a:focus-visible {
-  outline: 2px solid #b99a52;
+  outline:
+    2px solid
+    #b99a52;
 
   outline-offset: 3px;
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }

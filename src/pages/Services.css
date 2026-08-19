@@ -7,9 +7,10 @@
 ===================================================== */
 
 .services-page {
-  --services-dark-blue: #12345b;
-  --services-dark-blue-2: #0d2947;
-  --services-blue: #1d4f7a;
+  --services-navy: #071f3a;
+  --services-dark-blue: #101d63;
+  --services-blue: #172b82;
+  --services-blue-light: #3152b5;
 
   --services-gold: #c9a227;
   --services-gold-light: #e6d28a;

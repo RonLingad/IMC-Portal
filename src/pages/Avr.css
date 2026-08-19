@@ -10,12 +10,15 @@ body {
 }
 
 .avr-page {
-  --avr-dark-blue: #12345b;
-  --avr-dark-blue-2: #0d2947;
-  --avr-blue: #1d4f7a;
+  --avr-navy: #071f3a;
+  --avr-dark-blue: #101d63;
+  --avr-blue: #172b82;
+  --avr-blue-light: #3152b5;
 
   --avr-gold: #c9a227;
   --avr-gold-light: #e6d28a;
+
+  --avr-light-blue: #edf4fa;
 
   width: 100%;
   max-width: 100%;

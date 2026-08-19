@@ -101,7 +101,6 @@
   font-size: 0.7rem;
 }
 
-
 .sidebar-divider {
   width: 100%;
   height: 1px;
@@ -1231,6 +1230,11 @@
   color: #23663d;
 }
 
+.status-badge.cancelled {
+  background: #fff1f1;
+  color: #9d2525;
+}
+
 
 /* =========================================================
    CONTENT LIST
@@ -1337,35 +1341,64 @@
    STAFF
    ========================================================= */
 
+/*
+   IMPORTANT FIX:
+
+   The original staff card used:
+       align-items: center;
+
+   and the name used:
+       white-space: nowrap;
+
+   This caused long names/positions to become squeezed.
+
+   The staff card below uses a cleaner structure:
+   PHOTO | NAME + POSITION | ACTIONS
+*/
+
 .staff-grid {
   display: grid;
 
   grid-template-columns:
     repeat(2, minmax(0, 1fr));
 
-  gap: 10px;
+  gap: 12px;
+
+  width: 100%;
 }
 
 .staff-card {
   display: flex;
   align-items: center;
 
-  gap: 12px;
+  gap: 14px;
 
-  padding: 13px;
+  width: 100%;
+  min-width: 0;
+
+  padding: 14px;
 
   background: #ffffff;
 
   border: 1px solid #e1e6eb;
 
-  border-radius: 5px;
+  border-radius: 6px;
+
+  overflow: hidden;
 }
 
-.staff-photo {
-  width: 58px;
-  height: 58px;
 
-  min-width: 58px;
+/* =========================================================
+   STAFF PHOTO
+   ========================================================= */
+
+.staff-photo {
+  width: 64px;
+  height: 64px;
+
+  min-width: 64px;
+
+  flex-shrink: 0;
 
   display: flex;
   align-items: center;
@@ -1379,7 +1412,7 @@
 
   border: 1px solid #dce3e9;
 
-  border-radius: 4px;
+  border-radius: 5px;
 
   font-size: 1rem;
   font-weight: 700;
@@ -1389,37 +1422,98 @@
   width: 100%;
   height: 100%;
 
+  display: block;
+
   object-fit: cover;
 }
 
+
+/* =========================================================
+   STAFF INFORMATION
+   ========================================================= */
+
 .staff-info {
-  flex: 1;
+  flex: 1 1 auto;
 
   min-width: 0;
+
+  width: 100%;
+
+  display: flex;
+  flex-direction: column;
+
+  justify-content: center;
+
+  overflow: hidden;
 }
 
 .staff-info strong {
   display: block;
 
-  overflow: hidden;
+  width: 100%;
+
+  margin: 0;
 
   color: #172033;
 
-  font-size: 0.8rem;
+  font-size: 0.84rem;
+  font-weight: 700;
 
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.35;
+
+  overflow-wrap: anywhere;
+
+  word-break: normal;
 }
 
 .staff-info span {
   display: block;
 
-  margin-top: 4px;
+  width: 100%;
+
+  margin-top: 5px;
 
   color: #667085;
 
-  font-size: 0.7rem;
+  font-size: 0.72rem;
+  font-weight: 500;
+
+  line-height: 1.4;
+
+  overflow-wrap: anywhere;
+
+  word-break: normal;
 }
+
+
+/* =========================================================
+   STAFF ACTIONS
+   ========================================================= */
+
+.staff-card .action-group {
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  gap: 5px;
+
+  flex-shrink: 0;
+
+  margin-left: auto;
+}
+
+.staff-card .table-edit,
+.staff-card .table-delete {
+  flex-shrink: 0;
+
+  white-space: nowrap;
+}
+
+
+/* =========================================================
+   CURRENT STAFF IMAGE
+   ========================================================= */
 
 .current-image {
   display: flex;
@@ -1446,6 +1540,8 @@
   width: 60px;
   height: 60px;
 
+  display: block;
+
   object-fit: cover;
 
   border-radius: 3px;
@@ -1464,7 +1560,32 @@
 
 
 /* =========================================================
-   RESPONSIVE
+   PROTECTED ACCOUNT
+   ========================================================= */
+
+.protected-account {
+  display: inline-flex;
+
+  align-items: center;
+  justify-content: center;
+
+  padding: 6px 10px;
+
+  border-radius: 6px;
+
+  font-size: 12px;
+  font-weight: 600;
+
+  color: #64748b;
+
+  background: #f1f5f9;
+
+  border: 1px solid #e2e8f0;
+}
+
+
+/* =========================================================
+   RESPONSIVE - 1100px
    ========================================================= */
 
 @media (max-width: 1100px) {
@@ -1481,6 +1602,10 @@
 
 }
 
+
+/* =========================================================
+   RESPONSIVE - 900px
+   ========================================================= */
 
 @media (max-width: 900px) {
 
@@ -1511,6 +1636,10 @@
 
 }
 
+
+/* =========================================================
+   RESPONSIVE - 700px
+   ========================================================= */
 
 @media (max-width: 700px) {
 
@@ -1597,8 +1726,35 @@
     width: 100%;
   }
 
+  /* STAFF */
+
+  .staff-card {
+    gap: 12px;
+
+    padding: 13px;
+  }
+
+  .staff-photo {
+    width: 60px;
+    height: 60px;
+
+    min-width: 60px;
+  }
+
+  .staff-info strong {
+    font-size: 0.82rem;
+  }
+
+  .staff-info span {
+    font-size: 0.7rem;
+  }
+
 }
 
+
+/* =========================================================
+   RESPONSIVE - 520px
+   ========================================================= */
 
 @media (max-width: 520px) {
 
@@ -1650,28 +1806,119 @@
     margin-left: auto;
   }
 
-  .staff-card {
-    align-items: flex-start;
 
-    flex-wrap: wrap;
+  /* =======================================================
+     STAFF MOBILE
+  ======================================================= */
+
+  .staff-grid {
+    grid-template-columns: 1fr;
+
+    gap: 10px;
+  }
+
+  .staff-card {
+    display: grid;
+
+    grid-template-columns: 58px minmax(0, 1fr);
+
+    align-items: center;
+
+    column-gap: 12px;
+    row-gap: 10px;
+
+    padding: 12px;
+  }
+
+  .staff-photo {
+    width: 58px;
+    height: 58px;
+
+    min-width: 58px;
+
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .staff-info {
+    grid-column: 2;
+    grid-row: 1;
+
+    min-width: 0;
+
+    width: 100%;
+  }
+
+  .staff-info strong {
+    font-size: 0.82rem;
+
+    line-height: 1.35;
+
+    white-space: normal;
+
+    overflow: visible;
+  }
+
+  .staff-info span {
+    margin-top: 4px;
+
+    font-size: 0.7rem;
+
+    line-height: 1.35;
+
+    white-space: normal;
   }
 
   .staff-card .action-group {
+    grid-column: 1 / -1;
+    grid-row: 2;
+
     width: 100%;
 
-    margin-left: 70px;
+    margin: 0;
+
+    justify-content: flex-end;
+
+    padding-top: 2px;
+
+    border-top: 1px solid #edf0f3;
+  }
+
+  .staff-card .table-edit,
+  .staff-card .table-delete {
+    padding: 6px 10px;
   }
 
 }
-.protected-account {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #64748b;
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
+
+
+/* =========================================================
+   VERY SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 360px) {
+
+  .staff-card {
+    grid-template-columns: 52px minmax(0, 1fr);
+
+    column-gap: 10px;
+
+    padding: 10px;
+  }
+
+  .staff-photo {
+    width: 52px;
+    height: 52px;
+
+    min-width: 52px;
+  }
+
+  .staff-info strong {
+    font-size: 0.78rem;
+  }
+
+  .staff-info span {
+    font-size: 0.67rem;
+  }
+
 }

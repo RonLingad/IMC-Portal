@@ -1,11 +1,8 @@
-/* =========================================================
-   LIBRARY PAGE
-   ========================================================= */
-
 .library-page {
-  --library-dark-blue: #12345b;
-  --library-dark-blue-2: #0d2947;
-  --library-blue: #1d4f7a;
+  --library-navy: #071f3a;
+  --library-dark-blue: #101d63;
+  --library-blue: #172b82;
+  --library-blue-light: #3152b5;
 
   --library-gold: #c9a227;
   --library-gold-light: #e6d28a;
