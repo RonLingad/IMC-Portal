@@ -1,10 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../services/supabase";
 import "./AdminControl.css";
 
 function AdminControl() {
   const navigate = useNavigate();
+
+  /* =========================================================
+     GENERAL
+  ========================================================= */
 
   const [activeTab, setActiveTab] = useState("dashboard");
   const [loading, setLoading] = useState(false);
@@ -13,6 +17,8 @@ function AdminControl() {
     text: "",
     type: "",
   });
+
+  const messageTimerRef = useRef(null);
 
   /* =========================================================
      USER MANAGEMENT
@@ -40,7 +46,8 @@ function AdminControl() {
 
   const [requestSearch, setRequestSearch] = useState("");
   const [requestTypeFilter, setRequestTypeFilter] = useState("all");
-  const [requestStatusFilter, setRequestStatusFilter] = useState("all");
+  const [requestStatusFilter, setRequestStatusFilter] =
+    useState("all");
 
   /* =========================================================
      ACTIVITIES
@@ -112,20 +119,39 @@ function AdminControl() {
   const [isEditingStaff, setIsEditingStaff] = useState(false);
 
   /* =========================================================
-     INITIAL LOAD
+     CLEANUP MESSAGE TIMER
   ========================================================= */
 
   useEffect(() => {
-    fetchUsers();
-    fetchRequests();
+    return () => {
+      if (messageTimerRef.current) {
+        clearTimeout(messageTimerRef.current);
+      }
+    };
   }, []);
 
+  /* =========================================================
+     TAB DATA LOADING
+  ========================================================= */
+
   useEffect(() => {
-    if (activeTab === "users" || activeTab === "user-list") {
+    if (activeTab === "dashboard") {
+      fetchUsers();
+      fetchRequests();
+      fetchActivities();
+      fetchAnnouncements();
+      fetchFacilities();
+      fetchStaff();
+    }
+
+    if (
+      activeTab === "users" ||
+      activeTab === "user-list"
+    ) {
       fetchUsers();
     }
 
-    if (activeTab === "requests" || activeTab === "dashboard") {
+    if (activeTab === "requests") {
       fetchRequests();
     }
 
@@ -155,12 +181,16 @@ function AdminControl() {
   ========================================================= */
 
   const showMessage = (text, type = "success") => {
+    if (messageTimerRef.current) {
+      clearTimeout(messageTimerRef.current);
+    }
+
     setMessage({
       text,
       type,
     });
 
-    setTimeout(() => {
+    messageTimerRef.current = setTimeout(() => {
       setMessage({
         text: "",
         type: "",
@@ -173,8 +203,11 @@ function AdminControl() {
   ========================================================= */
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/login");
+    try {
+      await supabase.auth.signOut();
+    } finally {
+      navigate("/login");
+    }
   };
 
   /* =========================================================
@@ -185,19 +218,21 @@ function AdminControl() {
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("*")
+        .select("id, email, role")
         .order("email", {
           ascending: true,
         });
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
       setUsers(data || []);
     } catch (error) {
       console.error("Fetch users error:", error);
 
       showMessage(
-        error.message || "Unable to load users.",
+        error?.message || "Unable to load users.",
         "error"
       );
     }
@@ -214,14 +249,52 @@ function AdminControl() {
     setIsEditingUser(false);
   };
 
+  const handleUserInputChange = (field, value) => {
+    setUserForm((previous) => ({
+      ...previous,
+      [field]: value,
+    }));
+  };
+
+  /* =========================================================
+     CREATE / UPDATE USER
+     
+     Authentication operations are performed through
+     the manage-user Edge Function.
+  ========================================================= */
+
   const handleSaveUser = async (e) => {
     e.preventDefault();
+
+    if (loading) {
+      return;
+    }
 
     setLoading(true);
 
     try {
-      if (!userForm.email.trim()) {
-        throw new Error("Email address is required.");
+      const email = userForm.email
+        .trim()
+        .toLowerCase();
+
+      const role = userForm.role;
+
+      if (!email) {
+        throw new Error(
+          "Email address is required."
+        );
+      }
+
+      const allowedRoles = [
+        "librarystaff",
+        "avrstaff",
+        "faculty",
+      ];
+
+      if (!allowedRoles.includes(role)) {
+        throw new Error(
+          "Please select a valid user role."
+        );
       }
 
       /* =====================================================
@@ -233,24 +306,44 @@ function AdminControl() {
           (user) => user.id === userForm.id
         );
 
-        if (existingUser?.role === "admin") {
+        if (!existingUser) {
+          throw new Error(
+            "The selected user could not be found."
+          );
+        }
+
+        if (existingUser.role === "admin") {
           throw new Error(
             "Administrator accounts cannot be edited."
           );
         }
 
-        const { error } = await supabase
-          .from("profiles")
-          .update({
-            email: userForm.email.trim(),
-            role: userForm.role,
-          })
-          .eq("id", userForm.id);
+        const { data, error } =
+          await supabase.functions.invoke(
+            "smooth-function",
+            {
+              body: {
+                action: "update",
+                userId: userForm.id,
+                email,
+                role,
+              },
+            }
+          );
 
-        if (error) throw error;
+        if (error) {
+          throw error;
+        }
+
+        if (!data?.success) {
+          throw new Error(
+            data?.error ||
+              "Unable to update the user account."
+          );
+        }
 
         showMessage(
-          "User information updated successfully."
+          "User account updated successfully."
         );
 
         resetUserForm();
@@ -266,41 +359,43 @@ function AdminControl() {
          CREATE NEW USER
       ===================================================== */
 
-      if (!userForm.password) {
+      const password = userForm.password;
+
+      if (!password) {
         throw new Error(
-          "A password is required when creating an Auth account."
+          "An initial password is required."
         );
       }
 
-      const {
-        data: authData,
-        error: authError,
-      } = await supabase.auth.signUp({
-        email: userForm.email.trim(),
-        password: userForm.password,
-      });
-
-      if (authError) throw authError;
-
-      const userId = authData?.user?.id;
-
-      if (!userId) {
+      if (password.length < 6) {
         throw new Error(
-          "Account was not created. Supabase did not return a user ID."
+          "Password must be at least 6 characters."
         );
       }
 
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .upsert([
+      const { data, error } =
+        await supabase.functions.invoke(
+          "smooth-function",
           {
-            id: userId,
-            email: userForm.email.trim(),
-            role: userForm.role,
-          },
-        ]);
+            body: {
+              action: "create",
+              email,
+              password,
+              role,
+            },
+          }
+        );
 
-      if (profileError) throw profileError;
+      if (error) {
+        throw error;
+      }
+
+      if (!data?.success) {
+        throw new Error(
+          data?.error ||
+            "Unable to create the user account."
+        );
+      }
 
       showMessage(
         "User account created successfully."
@@ -312,10 +407,14 @@ function AdminControl() {
 
       setActiveTab("user-list");
     } catch (error) {
-      console.error("User save error:", error);
+      console.error(
+        "User save error:",
+        error
+      );
 
       showMessage(
-        error.message || "Unable to save user.",
+        error?.message ||
+          "Unable to save user account.",
         "error"
       );
     } finally {
@@ -323,7 +422,15 @@ function AdminControl() {
     }
   };
 
+  /* =========================================================
+     EDIT USER
+  ========================================================= */
+
   const handleEditUser = (user) => {
+    if (!user) {
+      return;
+    }
+
     if (user.role === "admin") {
       showMessage(
         "Administrator accounts cannot be edited.",
@@ -350,7 +457,15 @@ function AdminControl() {
     });
   };
 
+  /* =========================================================
+     DELETE USER
+  ========================================================= */
+
   const handleDeleteUser = async (user) => {
+    if (!user) {
+      return;
+    }
+
     if (user.role === "admin") {
       showMessage(
         "Administrator accounts cannot be deleted.",
@@ -361,31 +476,52 @@ function AdminControl() {
     }
 
     const confirmed = window.confirm(
-      `Are you sure you want to delete ${user.email}?`
+      `Are you sure you want to permanently delete ${user.email}?`
     );
 
-    if (!confirmed) return;
+    if (!confirmed) {
+      return;
+    }
 
     setLoading(true);
 
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .delete()
-        .eq("id", user.id);
+      const { data, error } =
+        await supabase.functions.invoke(
+          "smooth-function",
+          {
+            body: {
+              action: "delete",
+              userId: user.id,
+            },
+          }
+        );
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
+
+      if (!data?.success) {
+        throw new Error(
+          data?.error ||
+            "Unable to delete the user account."
+        );
+      }
 
       showMessage(
-        "User profile deleted successfully."
+        "User account deleted successfully."
       );
 
       await fetchUsers();
     } catch (error) {
-      console.error("Delete user error:", error);
+      console.error(
+        "Delete user error:",
+        error
+      );
 
       showMessage(
-        error.message || "Unable to delete user.",
+        error?.message ||
+          "Unable to delete user account.",
         "error"
       );
     } finally {
@@ -394,48 +530,66 @@ function AdminControl() {
   };
 
   const filteredUsers = useMemo(() => {
+    const search = userSearch
+      .trim()
+      .toLowerCase();
+
     return users.filter((user) => {
-      const search = userSearch.toLowerCase();
+      const email =
+        user.email?.toLowerCase() || "";
 
       const matchesSearch =
         !search ||
-        user.email
-          ?.toLowerCase()
-          .includes(search);
+        email.includes(search);
 
       const matchesRole =
         roleFilter === "all" ||
         user.role === roleFilter;
 
-      return matchesSearch && matchesRole;
+      return (
+        matchesSearch &&
+        matchesRole
+      );
     });
-  }, [users, userSearch, roleFilter]);
+  }, [
+    users,
+    userSearch,
+    roleFilter,
+  ]);
+
+  /* =========================================================
+     REQUEST TYPE MATCHING
+     
+     IMPORTANT:
+     This is declared BEFORE filteredRequests because
+     filteredRequests uses this function.
+  ========================================================= */
+
+  const requestTypeMatches = (
+    type,
+    filter
+  ) => {
+    if (filter === "library") {
+      return type.includes("library");
+    }
+
+    if (filter === "avr") {
+      return (
+        type.includes("avr") ||
+        type.includes("technical assistance") ||
+        type.includes("technical")
+      );
+    }
+
+    return true;
+  };
 
   /* =========================================================
      REQUEST RECORDS
-
-     IMPORTANT:
-     Your Supabase schema shows:
-
-     library_requests
-     - id
-     - requester_name
-     - requester_email
-     - request_type
-     - details
-     - request_date
-     - status
-     - created_at
-     - updated_at
-     - assigned_staff_id
-
-     Therefore we fetch library_requests instead of requests.
   ========================================================= */
 
   const fetchRequests = async () => {
     try {
-      console.log("Fetching ALL library requests...");
-
       const { data, error } = await supabase
         .from("library_requests")
         .select(`
@@ -455,27 +609,9 @@ function AdminControl() {
         });
 
       if (error) {
-        console.error(
-          "Supabase library_requests error:",
-          error
-        );
-
         throw error;
       }
 
-      console.log(
-        "Library requests fetched:",
-        data
-      );
-
-      /*
-       * IMPORTANT:
-       * Do NOT filter by status here.
-       *
-       * This means Pending, Assigned,
-       * Completed, Cancelled, etc.
-       * will ALL be fetched.
-       */
       setRequests(data || []);
     } catch (error) {
       console.error(
@@ -486,7 +622,7 @@ function AdminControl() {
       setRequests([]);
 
       showMessage(
-        error.message ||
+        error?.message ||
           "Unable to load library request records.",
         "error"
       );
@@ -498,10 +634,11 @@ function AdminControl() {
   ========================================================= */
 
   const filteredRequests = useMemo(() => {
-    return requests.filter((request) => {
-      const search =
-        requestSearch.trim().toLowerCase();
+    const search = requestSearch
+      .trim()
+      .toLowerCase();
 
+    return requests.filter((request) => {
       const requesterName =
         request.requester_name
           ?.toLowerCase() || "";
@@ -511,39 +648,45 @@ function AdminControl() {
           ?.toLowerCase() || "";
 
       const assignedStaff =
-        request.assigned_staff_id
-          ?.toLowerCase() || "";
+        String(
+          request.assigned_staff_id || ""
+        ).toLowerCase();
 
       const requestDetails =
         request.details
           ?.toLowerCase() || "";
+
+      const requestType =
+        request.request_type
+          ?.toLowerCase()
+          .trim() || "";
+
+      const requestStatus =
+        request.status
+          ?.toLowerCase()
+          .trim() || "";
 
       const matchesSearch =
         !search ||
         requesterName.includes(search) ||
         requesterEmail.includes(search) ||
         assignedStaff.includes(search) ||
-        requestDetails.includes(search);
-
-      const requestType =
-        request.request_type
-          ?.toLowerCase()
-          .trim();
+        requestDetails.includes(search) ||
+        requestType.includes(search);
 
       const matchesType =
         requestTypeFilter === "all" ||
-        requestType ===
-          requestTypeFilter.toLowerCase();
-
-      const requestStatus =
-        request.status
-          ?.toLowerCase()
-          .trim();
+        requestTypeMatches(
+          requestType,
+          requestTypeFilter
+        );
 
       const matchesStatus =
         requestStatusFilter === "all" ||
         requestStatus ===
-          requestStatusFilter.toLowerCase();
+          requestStatusFilter
+            .toLowerCase()
+            .trim();
 
       return (
         matchesSearch &&
@@ -563,56 +706,77 @@ function AdminControl() {
   ========================================================= */
 
   const requestAnalytics = useMemo(() => {
+    const normalize = (value) =>
+      value
+        ?.toLowerCase()
+        .trim() || "";
+
     const total = requests.length;
 
     const pending = requests.filter(
       (item) =>
-        item.status
-          ?.toLowerCase()
-          .trim() === "pending"
+        normalize(item.status) ===
+        "pending"
     ).length;
 
     const assigned = requests.filter(
       (item) =>
-        item.status
-          ?.toLowerCase()
-          .trim() === "assigned"
+        normalize(item.status) ===
+        "assigned"
+    ).length;
+
+    const accepted = requests.filter(
+      (item) =>
+        normalize(item.status) ===
+        "accepted"
     ).length;
 
     const completed = requests.filter(
       (item) =>
-        item.status
-          ?.toLowerCase()
-          .trim() === "completed"
+        normalize(item.status) ===
+        "completed"
     ).length;
 
     const cancelled = requests.filter(
       (item) =>
-        item.status
-          ?.toLowerCase()
-          .trim() === "cancelled"
+        normalize(item.status) ===
+        "cancelled"
+    ).length;
+
+    const notAvailable = requests.filter(
+      (item) =>
+        normalize(item.status) ===
+        "not available"
     ).length;
 
     const library = requests.filter(
       (item) =>
-        item.request_type
-          ?.toLowerCase()
-          .includes("library")
+        normalize(
+          item.request_type
+        ).includes("library")
     ).length;
 
     const avr = requests.filter(
-      (item) =>
-        item.request_type
-          ?.toLowerCase()
-          .includes("avr")
+      (item) => {
+        const type = normalize(
+          item.request_type
+        );
+
+        return (
+          type.includes("avr") ||
+          type.includes("technical")
+        );
+      }
     ).length;
 
     return {
       total,
       pending,
       assigned,
+      accepted,
       completed,
       cancelled,
+      notAvailable,
       library,
       avr,
     };
@@ -626,10 +790,15 @@ function AdminControl() {
     file,
     bucket = "images"
   ) => {
-    if (!file) return null;
+    if (!file) {
+      return null;
+    }
 
     const fileExt =
-      file.name.split(".").pop();
+      file.name
+        .split(".")
+        .pop()
+        ?.toLowerCase() || "jpg";
 
     const fileName = `${Date.now()}-${Math.random()
       .toString(36)
@@ -638,7 +807,10 @@ function AdminControl() {
     const { error: uploadError } =
       await supabase.storage
         .from(bucket)
-        .upload(fileName, file);
+        .upload(fileName, file, {
+          cacheControl: "3600",
+          upsert: false,
+        });
 
     if (uploadError) {
       throw uploadError;
@@ -649,7 +821,7 @@ function AdminControl() {
         .from(bucket)
         .getPublicUrl(fileName);
 
-    return data.publicUrl;
+    return data?.publicUrl || null;
   };
 
   /* =========================================================
@@ -658,14 +830,17 @@ function AdminControl() {
 
   const fetchActivities = async () => {
     try {
-      const { data, error } = await supabase
-        .from("activities")
-        .select("*")
-        .order("id", {
-          ascending: false,
-        });
+      const { data, error } =
+        await supabase
+          .from("activities")
+          .select("*")
+          .order("id", {
+            ascending: false,
+          });
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
       setActivities(data || []);
     } catch (error) {
@@ -675,7 +850,8 @@ function AdminControl() {
       );
 
       showMessage(
-        error.message,
+        error?.message ||
+          "Unable to load activities.",
         "error"
       );
     }
@@ -684,11 +860,15 @@ function AdminControl() {
   const handleSaveActivity = async (e) => {
     e.preventDefault();
 
+    if (loading) {
+      return;
+    }
+
     setLoading(true);
 
     try {
       let imageUrl =
-        activityForm.image;
+        activityForm.image.trim();
 
       if (activityFile) {
         imageUrl =
@@ -697,22 +877,48 @@ function AdminControl() {
           );
       }
 
+      const title =
+        activityForm.title.trim();
+
+      const date =
+        activityForm.date.trim();
+
+      const description =
+        activityForm.description.trim();
+
+      if (!title) {
+        throw new Error(
+          "Activity title is required."
+        );
+      }
+
+      if (!date) {
+        throw new Error(
+          "Activity date is required."
+        );
+      }
+
+      if (!description) {
+        throw new Error(
+          "Activity description is required."
+        );
+      }
+
       const { error } =
         await supabase
           .from("activities")
           .insert([
             {
-              title:
-                activityForm.title,
-              date:
-                activityForm.date,
-              description:
-                activityForm.description,
-              image: imageUrl,
+              title,
+              date,
+              description,
+              image: imageUrl || null,
             },
           ]);
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
       showMessage(
         "Activity posted successfully."
@@ -729,8 +935,14 @@ function AdminControl() {
 
       await fetchActivities();
     } catch (error) {
+      console.error(
+        "Save activity error:",
+        error
+      );
+
       showMessage(
-        error.message,
+        error?.message ||
+          "Unable to publish activity.",
         "error"
       );
     } finally {
@@ -738,7 +950,13 @@ function AdminControl() {
     }
   };
 
-  const handleDeleteActivity = async (id) => {
+  const handleDeleteActivity = async (
+    id
+  ) => {
+    if (!id) {
+      return;
+    }
+
     if (
       !window.confirm(
         "Remove this activity?"
@@ -747,6 +965,8 @@ function AdminControl() {
       return;
     }
 
+    setLoading(true);
+
     try {
       const { error } =
         await supabase
@@ -754,7 +974,9 @@ function AdminControl() {
           .delete()
           .eq("id", id);
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
       showMessage(
         "Activity removed."
@@ -762,10 +984,18 @@ function AdminControl() {
 
       await fetchActivities();
     } catch (error) {
+      console.error(
+        "Delete activity error:",
+        error
+      );
+
       showMessage(
-        error.message,
+        error?.message ||
+          "Unable to remove activity.",
         "error"
       );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -783,12 +1013,20 @@ function AdminControl() {
             ascending: false,
           });
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
       setAnnouncements(data || []);
     } catch (error) {
+      console.error(
+        "Fetch announcements error:",
+        error
+      );
+
       showMessage(
-        error.message,
+        error?.message ||
+          "Unable to load announcements.",
         "error"
       );
     }
@@ -798,17 +1036,46 @@ function AdminControl() {
     async (e) => {
       e.preventDefault();
 
+      if (loading) {
+        return;
+      }
+
       setLoading(true);
 
       try {
+        const payload = {
+          badge:
+            announcementForm.badge.trim(),
+          date:
+            announcementForm.date.trim(),
+          tag:
+            announcementForm.tag.trim(),
+          title:
+            announcementForm.title.trim(),
+          description:
+            announcementForm.description.trim(),
+        };
+
+        if (
+          !payload.badge ||
+          !payload.date ||
+          !payload.tag ||
+          !payload.title ||
+          !payload.description
+        ) {
+          throw new Error(
+            "Please complete all announcement fields."
+          );
+        }
+
         const { error } =
           await supabase
             .from("announcements")
-            .insert([
-              announcementForm,
-            ]);
+            .insert([payload]);
 
-        if (error) throw error;
+        if (error) {
+          throw error;
+        }
 
         showMessage(
           "Announcement posted successfully."
@@ -824,8 +1091,14 @@ function AdminControl() {
 
         await fetchAnnouncements();
       } catch (error) {
+        console.error(
+          "Save announcement error:",
+          error
+        );
+
         showMessage(
-          error.message,
+          error?.message ||
+            "Unable to publish announcement.",
           "error"
         );
       } finally {
@@ -835,6 +1108,10 @@ function AdminControl() {
 
   const handleDeleteAnnouncement =
     async (id) => {
+      if (!id) {
+        return;
+      }
+
       if (
         !window.confirm(
           "Remove this announcement?"
@@ -843,6 +1120,8 @@ function AdminControl() {
         return;
       }
 
+      setLoading(true);
+
       try {
         const { error } =
           await supabase
@@ -850,7 +1129,9 @@ function AdminControl() {
             .delete()
             .eq("id", id);
 
-        if (error) throw error;
+        if (error) {
+          throw error;
+        }
 
         showMessage(
           "Announcement removed."
@@ -858,10 +1139,18 @@ function AdminControl() {
 
         await fetchAnnouncements();
       } catch (error) {
+        console.error(
+          "Delete announcement error:",
+          error
+        );
+
         showMessage(
-          error.message,
+          error?.message ||
+            "Unable to remove announcement.",
           "error"
         );
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -879,74 +1168,115 @@ function AdminControl() {
             ascending: false,
           });
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
       setFacilities(data || []);
     } catch (error) {
+      console.error(
+        "Fetch facilities error:",
+        error
+      );
+
       showMessage(
-        error.message,
+        error?.message ||
+          "Unable to load facilities.",
         "error"
       );
     }
   };
 
-  const handleSaveFacility =
-    async (e) => {
-      e.preventDefault();
+  const handleSaveFacility = async (
+    e
+  ) => {
+    e.preventDefault();
 
-      setLoading(true);
+    if (loading) {
+      return;
+    }
 
-      try {
-        let imageUrl =
-          facilityForm.image;
+    setLoading(true);
 
-        if (facilityFile) {
-          imageUrl =
-            await uploadImageFile(
-              facilityFile
-            );
-        }
+    try {
+      let imageUrl =
+        facilityForm.image.trim();
 
-        const { error } =
-          await supabase
-            .from("facilities")
-            .insert([
-              {
-                title:
-                  facilityForm.title,
-                description:
-                  facilityForm.description,
-                image: imageUrl,
-              },
-            ]);
-
-        if (error) throw error;
-
-        showMessage(
-          "Facility added successfully."
-        );
-
-        setFacilityForm({
-          title: "",
-          description: "",
-          image: "",
-        });
-
-        setFacilityFile(null);
-
-        await fetchFacilities();
-      } catch (error) {
-        showMessage(
-          error.message,
-          "error"
-        );
-      } finally {
-        setLoading(false);
+      if (facilityFile) {
+        imageUrl =
+          await uploadImageFile(
+            facilityFile
+          );
       }
-    };
+
+      const title =
+        facilityForm.title.trim();
+
+      const description =
+        facilityForm.description.trim();
+
+      if (!title) {
+        throw new Error(
+          "Facility title is required."
+        );
+      }
+
+      if (!description) {
+        throw new Error(
+          "Facility description is required."
+        );
+      }
+
+      const { error } =
+        await supabase
+          .from("facilities")
+          .insert([
+            {
+              title,
+              description,
+              image: imageUrl || null,
+            },
+          ]);
+
+      if (error) {
+        throw error;
+      }
+
+      showMessage(
+        "Facility added successfully."
+      );
+
+      setFacilityForm({
+        title: "",
+        description: "",
+        image: "",
+      });
+
+      setFacilityFile(null);
+
+      await fetchFacilities();
+    } catch (error) {
+      console.error(
+        "Save facility error:",
+        error
+      );
+
+      showMessage(
+        error?.message ||
+          "Unable to add facility.",
+        "error"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleDeleteFacility =
     async (id) => {
+      if (!id) {
+        return;
+      }
+
       if (
         !window.confirm(
           "Remove this facility?"
@@ -955,6 +1285,8 @@ function AdminControl() {
         return;
       }
 
+      setLoading(true);
+
       try {
         const { error } =
           await supabase
@@ -962,7 +1294,9 @@ function AdminControl() {
             .delete()
             .eq("id", id);
 
-        if (error) throw error;
+        if (error) {
+          throw error;
+        }
 
         showMessage(
           "Facility removed."
@@ -970,10 +1304,18 @@ function AdminControl() {
 
         await fetchFacilities();
       } catch (error) {
+        console.error(
+          "Delete facility error:",
+          error
+        );
+
         showMessage(
-          error.message,
+          error?.message ||
+            "Unable to remove facility.",
           "error"
         );
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -991,12 +1333,20 @@ function AdminControl() {
             ascending: false,
           });
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
       setStaff(data || []);
     } catch (error) {
+      console.error(
+        "Fetch staff error:",
+        error
+      );
+
       showMessage(
-        error.message,
+        error?.message ||
+          "Unable to load staff.",
         "error"
       );
     }
@@ -1014,80 +1364,108 @@ function AdminControl() {
     setIsEditingStaff(false);
   };
 
-  const handleSaveStaff =
-    async (e) => {
-      e.preventDefault();
+  const handleSaveStaff = async (e) => {
+    e.preventDefault();
 
-      setLoading(true);
+    if (loading) {
+      return;
+    }
 
-      try {
-        let imageUrl =
-          staffForm.image;
+    setLoading(true);
 
-        if (staffFile) {
-          imageUrl =
-            await uploadImageFile(
-              staffFile
-            );
-        }
+    try {
+      let imageUrl =
+        staffForm.image.trim();
 
-        const staffData = {
-          name:
-            staffForm.name.trim(),
-          position:
-            staffForm.position.trim(),
-          image: imageUrl,
-        };
-
-        if (isEditingStaff) {
-          const { error } =
-            await supabase
-              .from("staff")
-              .update(staffData)
-              .eq(
-                "id",
-                staffForm.id
-              );
-
-          if (error) throw error;
-
-          showMessage(
-            "Staff information updated."
+      if (staffFile) {
+        imageUrl =
+          await uploadImageFile(
+            staffFile
           );
-        } else {
-          const { error } =
-            await supabase
-              .from("staff")
-              .insert([
-                staffData,
-              ]);
-
-          if (error) throw error;
-
-          showMessage(
-            "Staff member added."
-          );
-        }
-
-        resetStaffForm();
-
-        await fetchStaff();
-      } catch (error) {
-        showMessage(
-          error.message,
-          "error"
-        );
-      } finally {
-        setLoading(false);
       }
-    };
+
+      const staffData = {
+        name:
+          staffForm.name.trim(),
+        position:
+          staffForm.position.trim(),
+        image: imageUrl || null,
+      };
+
+      if (!staffData.name) {
+        throw new Error(
+          "Staff name is required."
+        );
+      }
+
+      if (!staffData.position) {
+        throw new Error(
+          "Staff position is required."
+        );
+      }
+
+      if (isEditingStaff) {
+        const { error } =
+          await supabase
+            .from("staff")
+            .update(staffData)
+            .eq(
+              "id",
+              staffForm.id
+            );
+
+        if (error) {
+          throw error;
+        }
+
+        showMessage(
+          "Staff information updated."
+        );
+      } else {
+        const { error } =
+          await supabase
+            .from("staff")
+            .insert([
+              staffData,
+            ]);
+
+        if (error) {
+          throw error;
+        }
+
+        showMessage(
+          "Staff member added."
+        );
+      }
+
+      resetStaffForm();
+
+      await fetchStaff();
+    } catch (error) {
+      console.error(
+        "Save staff error:",
+        error
+      );
+
+      showMessage(
+        error?.message ||
+          "Unable to save staff information.",
+        "error"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleEditStaff = (item) => {
+    if (!item) {
+      return;
+    }
+
     setStaffForm({
       id: item.id,
       name: item.name || "",
-      position:
-        item.position || "",
+      position: item.position || "",
       image: item.image || "",
     });
 
@@ -1100,41 +1478,54 @@ function AdminControl() {
     });
   };
 
-  const handleDeleteStaff =
-    async (id) => {
-      if (
-        !window.confirm(
-          "Remove this staff member?"
-        )
-      ) {
-        return;
+  const handleDeleteStaff = async (
+    id
+  ) => {
+    if (!id) {
+      return;
+    }
+
+    if (
+      !window.confirm(
+        "Remove this staff member?"
+      )
+    ) {
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const { error } =
+        await supabase
+          .from("staff")
+          .delete()
+          .eq("id", id);
+
+      if (error) {
+        throw error;
       }
 
-      setLoading(true);
+      showMessage(
+        "Staff member removed."
+      );
 
-      try {
-        const { error } =
-          await supabase
-            .from("staff")
-            .delete()
-            .eq("id", id);
+      await fetchStaff();
+    } catch (error) {
+      console.error(
+        "Delete staff error:",
+        error
+      );
 
-        if (error) throw error;
-
-        showMessage(
-          "Staff member removed."
-        );
-
-        await fetchStaff();
-      } catch (error) {
-        showMessage(
-          error.message,
-          "error"
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
+      showMessage(
+        error?.message ||
+          "Unable to remove staff member.",
+        "error"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   /* =========================================================
      VISION & MISSION
@@ -1150,14 +1541,22 @@ function AdminControl() {
             .limit(1)
             .maybeSingle();
 
-        if (error) throw error;
+        if (error) {
+          throw error;
+        }
 
         if (data) {
           setVisionMission(data);
         }
       } catch (error) {
+        console.error(
+          "Fetch vision mission error:",
+          error
+        );
+
         showMessage(
-          error.message,
+          error?.message ||
+            "Unable to load Vision and Mission.",
           "error"
         );
       }
@@ -1167,24 +1566,49 @@ function AdminControl() {
     async (e) => {
       e.preventDefault();
 
+      if (loading) {
+        return;
+      }
+
       setLoading(true);
 
       try {
+        const vision =
+          visionMission.vision.trim();
+
+        const mission =
+          visionMission.mission.trim();
+
+        if (!vision) {
+          throw new Error(
+            "Vision statement is required."
+          );
+        }
+
+        if (!mission) {
+          throw new Error(
+            "Mission statement is required."
+          );
+        }
+
         const payload = {
-          vision:
-            visionMission.vision,
-          mission:
-            visionMission.mission,
+          vision,
+          mission,
         };
+
+        if (visionMission.id) {
+          payload.id =
+            visionMission.id;
+        }
 
         const { error } =
           await supabase
             .from("vision_mission")
-            .upsert([
-              payload,
-            ]);
+            .upsert([payload]);
 
-        if (error) throw error;
+        if (error) {
+          throw error;
+        }
 
         showMessage(
           "Vision and Mission updated successfully."
@@ -1192,8 +1616,14 @@ function AdminControl() {
 
         await fetchVisionMission();
       } catch (error) {
+        console.error(
+          "Save vision mission error:",
+          error
+        );
+
         showMessage(
-          error.message,
+          error?.message ||
+            "Unable to save Vision and Mission.",
           "error"
         );
       } finally {
@@ -1205,37 +1635,35 @@ function AdminControl() {
      DASHBOARD
   ========================================================= */
 
-  const dashboardStats =
-    useMemo(() => {
-      return {
-        users: users.length,
-        requests: requests.length,
-        activities:
-          activities.length,
-        announcements:
-          announcements.length,
-        facilities:
-          facilities.length,
-        staff: staff.length,
-      };
-    }, [
-      users,
-      requests,
-      activities,
-      announcements,
-      facilities,
-      staff,
-    ]);
+  const dashboardStats = useMemo(() => {
+    return {
+      users: users.length,
+      requests: requests.length,
+      activities: activities.length,
+      announcements:
+        announcements.length,
+      facilities: facilities.length,
+      staff: staff.length,
+    };
+  }, [
+    users,
+    requests,
+    activities,
+    announcements,
+    facilities,
+    staff,
+  ]);
 
   /* =========================================================
      FORMATTERS
   ========================================================= */
 
   const formatDate = (date) => {
-    if (!date) return "—";
+    if (!date) {
+      return "—";
+    }
 
-    const parsedDate =
-      new Date(date);
+    const parsedDate = new Date(date);
 
     if (
       Number.isNaN(
@@ -1256,10 +1684,11 @@ function AdminControl() {
   };
 
   const formatDateTime = (date) => {
-    if (!date) return "—";
+    if (!date) {
+      return "—";
+    }
 
-    const parsedDate =
-      new Date(date);
+    const parsedDate = new Date(date);
 
     if (
       Number.isNaN(
@@ -1282,7 +1711,9 @@ function AdminControl() {
   };
 
   const formatRequestType = (type) => {
-    if (!type) return "—";
+    if (!type) {
+      return "—";
+    }
 
     return type
       .replace(/_/g, " ")
@@ -1294,7 +1725,9 @@ function AdminControl() {
   };
 
   const formatStatus = (status) => {
-    if (!status) return "Pending";
+    if (!status) {
+      return "Pending";
+    }
 
     return status
       .replace(/_/g, " ")
@@ -1303,6 +1736,34 @@ function AdminControl() {
         (letter) =>
           letter.toUpperCase()
       );
+  };
+
+  const getRoleLabel = (role) => {
+    switch (role) {
+      case "librarystaff":
+        return "Library Staff";
+
+      case "avrstaff":
+        return "AVR Staff";
+
+      case "faculty":
+        return "Faculty";
+
+      case "admin":
+        return "Administrator";
+
+      default:
+        return role || "Unknown";
+    }
+  };
+
+  const getStatusClass = (status) => {
+    return (
+      status
+        ?.toLowerCase()
+        .replace(/\s+/g, "-")
+        .replace(/_/g, "-") || "pending"
+    );
   };
 
   /* =========================================================
@@ -1387,32 +1848,28 @@ function AdminControl() {
 
         <nav className="admin-nav">
 
-          {navItems.map(
-            (item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={
-                  activeTab === item.id
-                    ? "active"
-                    : ""
-                }
-                onClick={() =>
-                  setActiveTab(
-                    item.id
-                  )
-                }
-              >
-                <span className="nav-icon">
-                  {item.icon}
-                </span>
+          {navItems.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={
+                activeTab === item.id
+                  ? "active"
+                  : ""
+              }
+              onClick={() =>
+                setActiveTab(item.id)
+              }
+            >
+              <span className="nav-icon">
+                {item.icon}
+              </span>
 
-                <span>
-                  {item.label}
-                </span>
-              </button>
-            )
-          )}
+              <span>
+                {item.label}
+              </span>
+            </button>
+          ))}
 
         </nav>
 
@@ -1439,9 +1896,7 @@ function AdminControl() {
           <button
             type="button"
             className="logout-btn"
-            onClick={
-              handleLogout
-            }
+            onClick={handleLogout}
           >
             <span>↪</span>
             Logout
@@ -1462,20 +1917,18 @@ function AdminControl() {
         <header className="admin-topbar">
 
           <div>
+
             <span className="topbar-label">
               ADMINISTRATION
             </span>
 
             <h2>
-              {
-                navItems.find(
-                  (item) =>
-                    item.id ===
-                    activeTab
-                )?.label ||
-                  "Dashboard"
-              }
+              {navItems.find(
+                (item) =>
+                  item.id === activeTab
+              )?.label || "Dashboard"}
             </h2>
+
           </div>
 
           <div className="topbar-status">
@@ -1490,6 +1943,7 @@ function AdminControl() {
         {message.text && (
           <div
             className={`admin-alert ${message.type}`}
+            role="alert"
           >
             {message.text}
           </div>
@@ -1499,11 +1953,11 @@ function AdminControl() {
             DASHBOARD
         ==================================================== */}
 
-        {activeTab ===
-          "dashboard" && (
+        {activeTab === "dashboard" && (
           <section className="page-section">
 
             <div className="page-heading">
+
               <div>
                 <h3>
                   Dashboard Overview
@@ -1515,6 +1969,7 @@ function AdminControl() {
                   portal content.
                 </p>
               </div>
+
             </div>
 
             <div className="stats-grid">
@@ -1525,9 +1980,7 @@ function AdminControl() {
                 </span>
 
                 <strong>
-                  {
-                    dashboardStats.users
-                  }
+                  {dashboardStats.users}
                 </strong>
 
                 <small>
@@ -1541,9 +1994,7 @@ function AdminControl() {
                 </span>
 
                 <strong>
-                  {
-                    dashboardStats.requests
-                  }
+                  {dashboardStats.requests}
                 </strong>
 
                 <small>
@@ -1557,9 +2008,7 @@ function AdminControl() {
                 </span>
 
                 <strong>
-                  {
-                    requestAnalytics.pending
-                  }
+                  {requestAnalytics.pending}
                 </strong>
 
                 <small>
@@ -1573,9 +2022,7 @@ function AdminControl() {
                 </span>
 
                 <strong>
-                  {
-                    requestAnalytics.completed
-                  }
+                  {requestAnalytics.completed}
                 </strong>
 
                 <small>
@@ -1604,27 +2051,27 @@ function AdminControl() {
                 </div>
 
                 <div className="analytics-row">
+
                   <span>
                     Library
                   </span>
 
                   <strong>
-                    {
-                      requestAnalytics.library
-                    }
+                    {requestAnalytics.library}
                   </strong>
+
                 </div>
 
                 <div className="analytics-row">
+
                   <span>
-                    AVR Technical
+                    AVR / Technical
                   </span>
 
                   <strong>
-                    {
-                      requestAnalytics.avr
-                    }
+                    {requestAnalytics.avr}
                   </strong>
+
                 </div>
 
               </div>
@@ -1651,9 +2098,7 @@ function AdminControl() {
                   </span>
 
                   <strong>
-                    {
-                      requestAnalytics.pending
-                    }
+                    {requestAnalytics.pending}
                   </strong>
                 </div>
 
@@ -1663,9 +2108,17 @@ function AdminControl() {
                   </span>
 
                   <strong>
-                    {
-                      requestAnalytics.assigned
-                    }
+                    {requestAnalytics.assigned}
+                  </strong>
+                </div>
+
+                <div className="analytics-row">
+                  <span>
+                    Accepted
+                  </span>
+
+                  <strong>
+                    {requestAnalytics.accepted}
                   </strong>
                 </div>
 
@@ -1675,9 +2128,7 @@ function AdminControl() {
                   </span>
 
                   <strong>
-                    {
-                      requestAnalytics.completed
-                    }
+                    {requestAnalytics.completed}
                   </strong>
                 </div>
 
@@ -1687,9 +2138,17 @@ function AdminControl() {
                   </span>
 
                   <strong>
-                    {
-                      requestAnalytics.cancelled
-                    }
+                    {requestAnalytics.cancelled}
+                  </strong>
+                </div>
+
+                <div className="analytics-row">
+                  <span>
+                    Not Available
+                  </span>
+
+                  <strong>
+                    {requestAnalytics.notAvailable}
                   </strong>
                 </div>
 
@@ -1706,51 +2165,51 @@ function AdminControl() {
                 </h4>
 
                 <div className="content-stat">
+
                   <span>
                     Activities
                   </span>
 
                   <strong>
-                    {
-                      dashboardStats.activities
-                    }
+                    {dashboardStats.activities}
                   </strong>
+
                 </div>
 
                 <div className="content-stat">
+
                   <span>
                     Announcements
                   </span>
 
                   <strong>
-                    {
-                      dashboardStats.announcements
-                    }
+                    {dashboardStats.announcements}
                   </strong>
+
                 </div>
 
                 <div className="content-stat">
+
                   <span>
                     Facilities
                   </span>
 
                   <strong>
-                    {
-                      dashboardStats.facilities
-                    }
+                    {dashboardStats.facilities}
                   </strong>
+
                 </div>
 
                 <div className="content-stat">
+
                   <span>
                     Staff
                   </span>
 
                   <strong>
-                    {
-                      dashboardStats.staff
-                    }
+                    {dashboardStats.staff}
                   </strong>
+
                 </div>
 
               </div>
@@ -1758,7 +2217,9 @@ function AdminControl() {
               <div className="dashboard-card">
 
                 <div className="dashboard-card-header">
+
                   <div>
+
                     <h4>
                       Recent Requests
                     </h4>
@@ -1766,6 +2227,7 @@ function AdminControl() {
                     <small>
                       Showing latest records
                     </small>
+
                   </div>
 
                   <button
@@ -1779,10 +2241,10 @@ function AdminControl() {
                   >
                     View All
                   </button>
+
                 </div>
 
-                {requests.length ===
-                0 ? (
+                {requests.length === 0 ? (
                   <p className="empty-text">
                     No request records found.
                   </p>
@@ -1791,58 +2253,51 @@ function AdminControl() {
 
                     {requests
                       .slice(0, 5)
-                      .map(
-                        (
-                          request
-                        ) => (
-                          <div
-                            key={
-                              request.id
-                            }
-                            className="recent-item"
-                          >
+                      .map((request) => (
+                        <div
+                          key={request.id}
+                          className="recent-item"
+                        >
 
-                            <div>
-                              <strong>
-                                {
-                                  request.requester_name ||
-                                  request.requester_email ||
-                                  "Unknown requester"
-                                }
-                              </strong>
+                          <div>
 
-                              <span>
-                                {formatRequestType(
-                                  request.request_type
-                                )}
-                              </span>
-                            </div>
+                            <strong>
+                              {request.requester_name ||
+                                request.requester_email ||
+                                "Unknown requester"}
+                            </strong>
 
-                            <div>
-                              <small>
-                                {formatDate(
-                                  request.request_date ||
-                                    request.created_at
-                                )}
-                              </small>
-
-                              <span
-                                className={`status-badge ${request.status
-                                  ?.toLowerCase()
-                                  .replace(
-                                    /\s+/g,
-                                    "-"
-                                  )}`}
-                              >
-                                {formatStatus(
-                                  request.status
-                                )}
-                              </span>
-                            </div>
+                            <span>
+                              {formatRequestType(
+                                request.request_type
+                              )}
+                            </span>
 
                           </div>
-                        )
-                      )}
+
+                          <div>
+
+                            <small>
+                              {formatDate(
+                                request.request_date ||
+                                  request.created_at
+                              )}
+                            </small>
+
+                            <span
+                              className={`status-badge ${getStatusClass(
+                                request.status
+                              )}`}
+                            >
+                              {formatStatus(
+                                request.status
+                              )}
+                            </span>
+
+                          </div>
+
+                        </div>
+                      ))}
 
                   </div>
                 )}
@@ -1858,21 +2313,22 @@ function AdminControl() {
             USER MANAGEMENT
         ==================================================== */}
 
-        {activeTab ===
-          "users" && (
+        {activeTab === "users" && (
           <section className="page-section">
 
             <div className="page-heading">
 
               <div>
+
                 <h3>
                   User Management
                 </h3>
 
                 <p>
-                  Create portal user
-                  accounts.
+                  Create and manage
+                  portal user accounts.
                 </p>
+
               </div>
 
               <button
@@ -1894,23 +2350,23 @@ function AdminControl() {
               <div className="form-card-header">
 
                 <div>
+
                   <span>
                     ACCOUNT INFORMATION
                   </span>
 
                   <h4>
                     {isEditingUser
-                      ? "Edit User"
+                      ? "Edit User Account"
                       : "Create New User"}
                   </h4>
+
                 </div>
 
               </div>
 
               <form
-                onSubmit={
-                  handleSaveUser
-                }
+                onSubmit={handleSaveUser}
                 className="admin-form"
               >
 
@@ -1918,25 +2374,21 @@ function AdminControl() {
 
                   <div className="form-field">
 
-                    <label>
+                    <label htmlFor="user-email">
                       Email Address
                     </label>
 
                     <input
+                      id="user-email"
                       type="email"
-                      value={
-                        userForm.email
-                      }
+                      value={userForm.email}
                       placeholder="user@example.com"
-                      onChange={(
-                        e
-                      ) =>
-                        setUserForm({
-                          ...userForm,
-                          email:
-                            e.target
-                              .value,
-                        })
+                      autoComplete="email"
+                      onChange={(e) =>
+                        handleUserInputChange(
+                          "email",
+                          e.target.value
+                        )
                       }
                       required
                     />
@@ -1945,23 +2397,18 @@ function AdminControl() {
 
                   <div className="form-field">
 
-                    <label>
+                    <label htmlFor="user-role">
                       Role
                     </label>
 
                     <select
-                      value={
-                        userForm.role
-                      }
-                      onChange={(
-                        e
-                      ) =>
-                        setUserForm({
-                          ...userForm,
-                          role:
-                            e.target
-                              .value,
-                        })
+                      id="user-role"
+                      value={userForm.role}
+                      onChange={(e) =>
+                        handleUserInputChange(
+                          "role",
+                          e.target.value
+                        )
                       }
                     >
 
@@ -1977,10 +2424,6 @@ function AdminControl() {
                         Faculty
                       </option>
 
-                      <option value="admin">
-                        Administrator
-                      </option>
-
                     </select>
 
                   </div>
@@ -1990,35 +2433,45 @@ function AdminControl() {
                 {!isEditingUser && (
                   <div className="form-field">
 
-                    <label>
-                      Temporary Password
+                    <label htmlFor="user-password">
+                      Initial Password
                     </label>
 
                     <input
+                      id="user-password"
                       type="password"
-                      value={
-                        userForm.password
-                      }
-                      placeholder="Enter temporary password"
-                      onChange={(
-                        e
-                      ) =>
-                        setUserForm({
-                          ...userForm,
-                          password:
-                            e.target
-                              .value,
-                        })
+                      value={userForm.password}
+                      placeholder="Enter initial password"
+                      autoComplete="new-password"
+                      minLength={6}
+                      onChange={(e) =>
+                        handleUserInputChange(
+                          "password",
+                          e.target.value
+                        )
                       }
                       required
                     />
 
                     <small>
-                      Required by
-                      Supabase Auth when
-                      creating an
-                      email/password
-                      account.
+                      Minimum 6 characters.
+                      The user can change
+                      this password after
+                      signing in.
+                    </small>
+
+                  </div>
+                )}
+
+                {isEditingUser && (
+                  <div className="form-field">
+
+                    <small>
+                      Changing the email
+                      address updates both
+                      the Supabase Auth
+                      account and the
+                      portal profile.
                     </small>
 
                   </div>
@@ -2029,9 +2482,7 @@ function AdminControl() {
                   <button
                     type="submit"
                     className="primary-button"
-                    disabled={
-                      loading
-                    }
+                    disabled={loading}
                   >
                     {loading
                       ? "Saving..."
@@ -2047,6 +2498,7 @@ function AdminControl() {
                       onClick={
                         resetUserForm
                       }
+                      disabled={loading}
                     >
                       Cancel
                     </button>
@@ -2065,13 +2517,13 @@ function AdminControl() {
             USER LIST
         ==================================================== */}
 
-        {activeTab ===
-          "user-list" && (
+        {activeTab === "user-list" && (
           <section className="page-section">
 
             <div className="page-heading">
 
               <div>
+
                 <h3>
                   User List
                 </h3>
@@ -2080,6 +2532,7 @@ function AdminControl() {
                   Manage registered
                   portal accounts.
                 </p>
+
               </div>
 
               <button
@@ -2108,9 +2561,7 @@ function AdminControl() {
                   </strong>
 
                   <span>
-                    {
-                      filteredUsers.length
-                    }{" "}
+                    {filteredUsers.length}{" "}
                     records
                   </span>
 
@@ -2121,39 +2572,25 @@ function AdminControl() {
                   <input
                     type="search"
                     placeholder="Search email..."
-                    value={
-                      userSearch
-                    }
-                    onChange={(
-                      e
-                    ) =>
+                    value={userSearch}
+                    onChange={(e) =>
                       setUserSearch(
-                        e.target
-                          .value
+                        e.target.value
                       )
                     }
                   />
 
                   <select
-                    value={
-                      roleFilter
-                    }
-                    onChange={(
-                      e
-                    ) =>
+                    value={roleFilter}
+                    onChange={(e) =>
                       setRoleFilter(
-                        e.target
-                          .value
+                        e.target.value
                       )
                     }
                   >
 
                     <option value="all">
                       All Roles
-                    </option>
-
-                    <option value="admin">
-                      Administrator
                     </option>
 
                     <option value="librarystaff">
@@ -2168,6 +2605,10 @@ function AdminControl() {
                       Faculty
                     </option>
 
+                    <option value="admin">
+                      Administrator
+                    </option>
+
                   </select>
 
                 </div>
@@ -2180,6 +2621,7 @@ function AdminControl() {
 
                   <thead>
                     <tr>
+
                       <th>
                         Email
                       </th>
@@ -2195,35 +2637,33 @@ function AdminControl() {
                       <th>
                         Actions
                       </th>
+
                     </tr>
                   </thead>
 
                   <tbody>
 
-                    {filteredUsers.length ===
-                    0 ? (
+                    {filteredUsers.length === 0 ? (
                       <tr>
+
                         <td
                           colSpan="4"
                           className="empty-table"
                         >
                           No users found.
                         </td>
+
                       </tr>
                     ) : (
                       filteredUsers.map(
                         (user) => (
                           <tr
-                            key={
-                              user.id
-                            }
+                            key={user.id}
                           >
 
                             <td>
                               <strong className="email-cell">
-                                {
-                                  user.email
-                                }
+                                {user.email}
                               </strong>
                             </td>
 
@@ -2231,24 +2671,15 @@ function AdminControl() {
                               <span
                                 className={`role-badge ${user.role}`}
                               >
-                                {user.role ===
-                                "librarystaff"
-                                  ? "Library Staff"
-                                  : user.role ===
-                                    "avrstaff"
-                                  ? "AVR Staff"
-                                  : user.role ===
-                                    "faculty"
-                                  ? "Faculty"
-                                  : "Administrator"}
+                                {getRoleLabel(
+                                  user.role
+                                )}
                               </span>
                             </td>
 
                             <td>
                               <span className="id-cell">
-                                {
-                                  user.id
-                                }
+                                {user.id}
                               </span>
                             </td>
 
@@ -2263,6 +2694,7 @@ function AdminControl() {
                                   </span>
                                 ) : (
                                   <>
+
                                     <button
                                       type="button"
                                       className="table-edit"
@@ -2270,6 +2702,9 @@ function AdminControl() {
                                         handleEditUser(
                                           user
                                         )
+                                      }
+                                      disabled={
+                                        loading
                                       }
                                     >
                                       Edit
@@ -2283,9 +2718,13 @@ function AdminControl() {
                                           user
                                         )
                                       }
+                                      disabled={
+                                        loading
+                                      }
                                     >
                                       Delete
                                     </button>
+
                                   </>
                                 )}
 
@@ -2313,13 +2752,13 @@ function AdminControl() {
             REQUEST RECORDS
         ==================================================== */}
 
-        {activeTab ===
-          "requests" && (
+        {activeTab === "requests" && (
           <section className="page-section">
 
             <div className="page-heading">
 
               <div>
+
                 <h3>
                   Request Records
                 </h3>
@@ -2329,6 +2768,7 @@ function AdminControl() {
                   requests including
                   completed records.
                 </p>
+
               </div>
 
               <button
@@ -2342,80 +2782,78 @@ function AdminControl() {
 
             </div>
 
-            {/* REQUEST STATISTICS */}
-
             <div className="request-stat-grid">
 
               <div className="request-stat">
+
                 <span>
                   Total Requests
                 </span>
 
                 <strong>
-                  {
-                    requestAnalytics.total
-                  }
+                  {requestAnalytics.total}
                 </strong>
+
               </div>
 
               <div className="request-stat">
+
                 <span>
                   Pending
                 </span>
 
                 <strong>
-                  {
-                    requestAnalytics.pending
-                  }
+                  {requestAnalytics.pending}
                 </strong>
+
               </div>
 
               <div className="request-stat">
+
                 <span>
                   Assigned
                 </span>
 
                 <strong>
-                  {
-                    requestAnalytics.assigned
-                  }
+                  {requestAnalytics.assigned}
                 </strong>
+
               </div>
 
               <div className="request-stat">
+
                 <span>
                   Completed
                 </span>
 
                 <strong>
-                  {
-                    requestAnalytics.completed
-                  }
+                  {requestAnalytics.completed}
                 </strong>
+
               </div>
 
               <div className="request-stat">
+
                 <span>
                   Cancelled
                 </span>
 
                 <strong>
-                  {
-                    requestAnalytics.cancelled
-                  }
+                  {requestAnalytics.cancelled}
                 </strong>
+
               </div>
 
               <div className="request-stat">
+
                 <span>
                   Library
                 </span>
 
                 <strong>
-                  {
-                    requestAnalytics.library
-                  }
+                  {requestAnalytics.library}
                 </strong>
+
               </div>
 
             </div>
@@ -2431,9 +2869,7 @@ function AdminControl() {
                   </strong>
 
                   <span>
-                    {
-                      filteredRequests.length
-                    }{" "}
+                    {filteredRequests.length}{" "}
                     records
                   </span>
 
@@ -2444,15 +2880,10 @@ function AdminControl() {
                   <input
                     type="search"
                     placeholder="Search requester..."
-                    value={
-                      requestSearch
-                    }
-                    onChange={(
-                      e
-                    ) =>
+                    value={requestSearch}
+                    onChange={(e) =>
                       setRequestSearch(
-                        e.target
-                          .value
+                        e.target.value
                       )
                     }
                   />
@@ -2461,12 +2892,9 @@ function AdminControl() {
                     value={
                       requestTypeFilter
                     }
-                    onChange={(
-                      e
-                    ) =>
+                    onChange={(e) =>
                       setRequestTypeFilter(
-                        e.target
-                          .value
+                        e.target.value
                       )
                     }
                   >
@@ -2479,8 +2907,8 @@ function AdminControl() {
                       Library
                     </option>
 
-                    <option value="avr technical">
-                      AVR Technical
+                    <option value="avr">
+                      AVR / Technical
                     </option>
 
                   </select>
@@ -2489,12 +2917,9 @@ function AdminControl() {
                     value={
                       requestStatusFilter
                     }
-                    onChange={(
-                      e
-                    ) =>
+                    onChange={(e) =>
                       setRequestStatusFilter(
-                        e.target
-                          .value
+                        e.target.value
                       )
                     }
                   >
@@ -2511,12 +2936,20 @@ function AdminControl() {
                       Assigned
                     </option>
 
+                    <option value="Accepted">
+                      Accepted
+                    </option>
+
                     <option value="Completed">
                       Completed
                     </option>
 
                     <option value="Cancelled">
                       Cancelled
+                    </option>
+
+                    <option value="Not Available">
+                      Not Available
                     </option>
 
                   </select>
@@ -2530,7 +2963,6 @@ function AdminControl() {
                 <table className="admin-table">
 
                   <thead>
-
                     <tr>
 
                       <th>
@@ -2562,7 +2994,6 @@ function AdminControl() {
                       </th>
 
                     </tr>
-
                   </thead>
 
                   <tbody>
@@ -2570,6 +3001,7 @@ function AdminControl() {
                     {filteredRequests.length ===
                     0 ? (
                       <tr>
+
                         <td
                           colSpan="7"
                           className="empty-table"
@@ -2577,62 +3009,60 @@ function AdminControl() {
                           No request
                           records found.
                         </td>
+
                       </tr>
                     ) : (
                       filteredRequests.map(
-                        (
-                          request
-                        ) => (
+                        (request) => (
                           <tr
                             key={
                               request.id
                             }
                           >
 
-                            {/* REQUESTER NAME */}
-
                             <td>
+
                               <strong>
                                 {
                                   request.requester_name ||
                                   "—"
                                 }
                               </strong>
+
                             </td>
 
-                            {/* EMAIL */}
-
                             <td>
+
                               <strong className="email-cell">
                                 {
                                   request.requester_email ||
                                   "—"
                                 }
                               </strong>
+
                             </td>
 
-                            {/* DATE */}
-
                             <td>
+
                               {formatDateTime(
                                 request.request_date ||
                                   request.created_at
                               )}
+
                             </td>
 
-                            {/* REQUEST TYPE */}
-
                             <td>
+
                               <span className="request-type">
                                 {formatRequestType(
                                   request.request_type
                                 )}
                               </span>
+
                             </td>
 
-                            {/* DETAILS */}
-
                             <td>
+
                               <span
                                 title={
                                   request.details ||
@@ -2650,32 +3080,28 @@ function AdminControl() {
                                     : request.details
                                   : "—"}
                               </span>
+
                             </td>
 
-                            {/* ASSIGNED STAFF */}
-
                             <td>
-                              {
-                                request.assigned_staff_id ||
-                                "Unassigned"
-                              }
+
+                              {request.assigned_staff_id ||
+                                "Unassigned"}
+
                             </td>
 
-                            {/* STATUS */}
-
                             <td>
+
                               <span
-                                className={`status-badge ${request.status
-                                  ?.toLowerCase()
-                                  .replace(
-                                    /\s+/g,
-                                    "-"
-                                  )}`}
+                                className={`status-badge ${getStatusClass(
+                                  request.status
+                                )}`}
                               >
                                 {formatStatus(
                                   request.status
                                 )}
                               </span>
+
                             </td>
 
                           </tr>
@@ -2698,22 +3124,25 @@ function AdminControl() {
             ACTIVITIES
         ==================================================== */}
 
-        {activeTab ===
-          "activities" && (
+        {activeTab === "activities" && (
           <section className="page-section">
 
             <div className="page-heading">
+
               <div>
+
                 <h3>
                   Activities & Campus News
                 </h3>
 
                 <p>
-                  Publish activities and
-                  news to the public
-                  portal.
+                  Publish activities
+                  and news to the
+                  public portal.
                 </p>
+
               </div>
+
             </div>
 
             <div className="form-card">
@@ -2737,11 +3166,14 @@ function AdminControl() {
                       activityForm.title
                     }
                     onChange={(e) =>
-                      setActivityForm({
-                        ...activityForm,
-                        title:
-                          e.target.value,
-                      })
+                      setActivityForm(
+                        (previous) => ({
+                          ...previous,
+                          title:
+                            e.target
+                              .value,
+                        })
+                      )
                     }
                     required
                   />
@@ -2761,11 +3193,14 @@ function AdminControl() {
                       activityForm.date
                     }
                     onChange={(e) =>
-                      setActivityForm({
-                        ...activityForm,
-                        date:
-                          e.target.value,
-                      })
+                      setActivityForm(
+                        (previous) => ({
+                          ...previous,
+                          date:
+                            e.target
+                              .value,
+                        })
+                      )
                     }
                     required
                   />
@@ -2784,7 +3219,7 @@ function AdminControl() {
                     onChange={(e) =>
                       setActivityFile(
                         e.target
-                          .files[0] ||
+                          .files?.[0] ||
                           null
                       )
                     }
@@ -2799,17 +3234,20 @@ function AdminControl() {
                   </label>
 
                   <input
-                    type="text"
+                    type="url"
                     value={
                       activityForm.image
                     }
                     placeholder="Optional image URL"
                     onChange={(e) =>
-                      setActivityForm({
-                        ...activityForm,
-                        image:
-                          e.target.value,
-                      })
+                      setActivityForm(
+                        (previous) => ({
+                          ...previous,
+                          image:
+                            e.target
+                              .value,
+                        })
+                      )
                     }
                   />
 
@@ -2827,11 +3265,14 @@ function AdminControl() {
                       activityForm.description
                     }
                     onChange={(e) =>
-                      setActivityForm({
-                        ...activityForm,
-                        description:
-                          e.target.value,
-                      })
+                      setActivityForm(
+                        (previous) => ({
+                          ...previous,
+                          description:
+                            e.target
+                              .value,
+                        })
+                      )
                     }
                     required
                   />
@@ -2841,9 +3282,7 @@ function AdminControl() {
                 <button
                   type="submit"
                   className="primary-button"
-                  disabled={
-                    loading
-                  }
+                  disabled={loading}
                 >
                   {loading
                     ? "Publishing..."
@@ -2863,63 +3302,53 @@ function AdminControl() {
                 </h4>
 
                 <span>
-                  {
-                    activities.length
-                  }
+                  {activities.length}
                 </span>
 
               </div>
 
-              {activities.map(
-                (item) => (
-                  <div
-                    key={
-                      item.id
-                    }
-                    className="content-list-item"
-                  >
+              {activities.map((item) => (
+                <div
+                  key={item.id}
+                  className="content-list-item"
+                >
 
-                    {item.image && (
-                      <img
-                        src={
-                          item.image
-                        }
-                        alt=""
-                      />
-                    )}
+                  {item.image && (
+                    <img
+                      src={item.image}
+                      alt=""
+                    />
+                  )}
 
-                    <div className="content-list-info">
+                  <div className="content-list-info">
 
-                      <strong>
-                        {
-                          item.title
-                        }
-                      </strong>
+                    <strong>
+                      {item.title}
+                    </strong>
 
-                      <span>
-                        {item.date}
-                      </span>
-
-                    </div>
-
-                    <button
-                      type="button"
-                      className="table-delete"
-                      onClick={() =>
-                        handleDeleteActivity(
-                          item.id
-                        )
-                      }
-                    >
-                      Delete
-                    </button>
+                    <span>
+                      {item.date}
+                    </span>
 
                   </div>
-                )
-              )}
 
-              {activities.length ===
-                0 && (
+                  <button
+                    type="button"
+                    className="table-delete"
+                    onClick={() =>
+                      handleDeleteActivity(
+                        item.id
+                      )
+                    }
+                    disabled={loading}
+                  >
+                    Delete
+                  </button>
+
+                </div>
+              ))}
+
+              {activities.length === 0 && (
                 <p className="empty-text">
                   No activities posted.
                 </p>
@@ -2941,15 +3370,16 @@ function AdminControl() {
             <div className="page-heading">
 
               <div>
+
                 <h3>
                   Announcements
                 </h3>
 
                 <p>
                   Manage official
-                  portal
-                  announcements.
+                  portal announcements.
                 </p>
+
               </div>
 
             </div>
@@ -2977,11 +3407,14 @@ function AdminControl() {
                         announcementForm.badge
                       }
                       onChange={(e) =>
-                        setAnnouncementForm({
-                          ...announcementForm,
-                          badge:
-                            e.target.value,
-                        })
+                        setAnnouncementForm(
+                          (previous) => ({
+                            ...previous,
+                            badge:
+                              e.target
+                                .value,
+                          })
+                        )
                       }
                       required
                     />
@@ -3000,11 +3433,14 @@ function AdminControl() {
                         announcementForm.date
                       }
                       onChange={(e) =>
-                        setAnnouncementForm({
-                          ...announcementForm,
-                          date:
-                            e.target.value,
-                        })
+                        setAnnouncementForm(
+                          (previous) => ({
+                            ...previous,
+                            date:
+                              e.target
+                                .value,
+                          })
+                        )
                       }
                       required
                     />
@@ -3025,11 +3461,13 @@ function AdminControl() {
                       announcementForm.tag
                     }
                     onChange={(e) =>
-                      setAnnouncementForm({
-                        ...announcementForm,
-                        tag:
-                          e.target.value,
-                      })
+                      setAnnouncementForm(
+                        (previous) => ({
+                          ...previous,
+                          tag:
+                            e.target.value,
+                        })
+                      )
                     }
                     required
                   />
@@ -3048,11 +3486,13 @@ function AdminControl() {
                       announcementForm.title
                     }
                     onChange={(e) =>
-                      setAnnouncementForm({
-                        ...announcementForm,
-                        title:
-                          e.target.value,
-                      })
+                      setAnnouncementForm(
+                        (previous) => ({
+                          ...previous,
+                          title:
+                            e.target.value,
+                        })
+                      )
                     }
                     required
                   />
@@ -3071,11 +3511,14 @@ function AdminControl() {
                       announcementForm.description
                     }
                     onChange={(e) =>
-                      setAnnouncementForm({
-                        ...announcementForm,
-                        description:
-                          e.target.value,
-                      })
+                      setAnnouncementForm(
+                        (previous) => ({
+                          ...previous,
+                          description:
+                            e.target
+                              .value,
+                        })
+                      )
                     }
                     required
                   />
@@ -3085,11 +3528,11 @@ function AdminControl() {
                 <button
                   type="submit"
                   className="primary-button"
-                  disabled={
-                    loading
-                  }
+                  disabled={loading}
                 >
-                  Publish Announcement
+                  {loading
+                    ? "Publishing..."
+                    : "Publish Announcement"}
                 </button>
 
               </form>
@@ -3105,9 +3548,7 @@ function AdminControl() {
                 </h4>
 
                 <span>
-                  {
-                    announcements.length
-                  }
+                  {announcements.length}
                 </span>
 
               </div>
@@ -3115,24 +3556,18 @@ function AdminControl() {
               {announcements.map(
                 (item) => (
                   <div
-                    key={
-                      item.id
-                    }
+                    key={item.id}
                     className="content-list-item"
                   >
 
                     <div className="content-list-info">
 
                       <span className="mini-badge">
-                        {
-                          item.badge
-                        }
+                        {item.badge}
                       </span>
 
                       <strong>
-                        {
-                          item.title
-                        }
+                        {item.title}
                       </strong>
 
                       <span>
@@ -3150,6 +3585,7 @@ function AdminControl() {
                           item.id
                         )
                       }
+                      disabled={loading}
                     >
                       Delete
                     </button>
@@ -3161,7 +3597,8 @@ function AdminControl() {
               {announcements.length ===
                 0 && (
                 <p className="empty-text">
-                  No announcements posted.
+                  No announcements
+                  posted.
                 </p>
               )}
 
@@ -3174,13 +3611,13 @@ function AdminControl() {
             FACILITIES
         ==================================================== */}
 
-        {activeTab ===
-          "facilities" && (
+        {activeTab === "facilities" && (
           <section className="page-section">
 
             <div className="page-heading">
 
               <div>
+
                 <h3>
                   Facilities
                 </h3>
@@ -3190,6 +3627,7 @@ function AdminControl() {
                   displayed on the
                   portal.
                 </p>
+
               </div>
 
             </div>
@@ -3215,11 +3653,14 @@ function AdminControl() {
                       facilityForm.title
                     }
                     onChange={(e) =>
-                      setFacilityForm({
-                        ...facilityForm,
-                        title:
-                          e.target.value,
-                      })
+                      setFacilityForm(
+                        (previous) => ({
+                          ...previous,
+                          title:
+                            e.target
+                              .value,
+                        })
+                      )
                     }
                     required
                   />
@@ -3238,7 +3679,7 @@ function AdminControl() {
                     onChange={(e) =>
                       setFacilityFile(
                         e.target
-                          .files[0] ||
+                          .files?.[0] ||
                           null
                       )
                     }
@@ -3253,16 +3694,19 @@ function AdminControl() {
                   </label>
 
                   <input
-                    type="text"
+                    type="url"
                     value={
                       facilityForm.image
                     }
                     onChange={(e) =>
-                      setFacilityForm({
-                        ...facilityForm,
-                        image:
-                          e.target.value,
-                      })
+                      setFacilityForm(
+                        (previous) => ({
+                          ...previous,
+                          image:
+                            e.target
+                              .value,
+                        })
+                      )
                     }
                   />
 
@@ -3280,11 +3724,14 @@ function AdminControl() {
                       facilityForm.description
                     }
                     onChange={(e) =>
-                      setFacilityForm({
-                        ...facilityForm,
-                        description:
-                          e.target.value,
-                      })
+                      setFacilityForm(
+                        (previous) => ({
+                          ...previous,
+                          description:
+                            e.target
+                              .value,
+                        })
+                      )
                     }
                     required
                   />
@@ -3294,11 +3741,11 @@ function AdminControl() {
                 <button
                   type="submit"
                   className="primary-button"
-                  disabled={
-                    loading
-                  }
+                  disabled={loading}
                 >
-                  Add Facility
+                  {loading
+                    ? "Saving..."
+                    : "Add Facility"}
                 </button>
 
               </form>
@@ -3314,69 +3761,58 @@ function AdminControl() {
                 </h4>
 
                 <span>
-                  {
-                    facilities.length
-                  }
+                  {facilities.length}
                 </span>
 
               </div>
 
-              {facilities.map(
-                (item) => (
-                  <div
-                    key={
-                      item.id
-                    }
-                    className="content-list-item"
-                  >
+              {facilities.map((item) => (
+                <div
+                  key={item.id}
+                  className="content-list-item"
+                >
 
-                    {item.image && (
-                      <img
-                        src={
-                          item.image
-                        }
-                        alt=""
-                      />
-                    )}
+                  {item.image && (
+                    <img
+                      src={item.image}
+                      alt=""
+                    />
+                  )}
 
-                    <div className="content-list-info">
+                  <div className="content-list-info">
 
-                      <strong>
-                        {
-                          item.title
-                        }
-                      </strong>
+                    <strong>
+                      {item.title}
+                    </strong>
 
-                      <span>
-                        {item.description?.substring(
-                          0,
-                          100
-                        )}
-                      </span>
-
-                    </div>
-
-                    <button
-                      type="button"
-                      className="table-delete"
-                      onClick={() =>
-                        handleDeleteFacility(
-                          item.id
-                        )
-                      }
-                    >
-                      Delete
-                    </button>
+                    <span>
+                      {item.description?.substring(
+                        0,
+                        100
+                      )}
+                    </span>
 
                   </div>
-                )
-              )}
 
-              {facilities.length ===
-                0 && (
+                  <button
+                    type="button"
+                    className="table-delete"
+                    onClick={() =>
+                      handleDeleteFacility(
+                        item.id
+                      )
+                    }
+                    disabled={loading}
+                  >
+                    Delete
+                  </button>
+
+                </div>
+              ))}
+
+              {facilities.length === 0 && (
                 <p className="empty-text">
-                  No facilities
-                  added.
+                  No facilities added.
                 </p>
               )}
 
@@ -3389,22 +3825,22 @@ function AdminControl() {
             STAFF
         ==================================================== */}
 
-        {activeTab ===
-          "staff" && (
+        {activeTab === "staff" && (
           <section className="page-section">
 
             <div className="page-heading">
 
               <div>
+
                 <h3>
                   Staff Management
                 </h3>
 
                 <p>
                   Manage staff members
-                  shown on the
-                  portal.
+                  shown on the portal.
                 </p>
+
               </div>
 
             </div>
@@ -3412,9 +3848,7 @@ function AdminControl() {
             <div className="form-card">
 
               <form
-                onSubmit={
-                  handleSaveStaff
-                }
+                onSubmit={handleSaveStaff}
                 className="admin-form"
               >
 
@@ -3433,11 +3867,14 @@ function AdminControl() {
                       }
                       placeholder="Juan Dela Cruz"
                       onChange={(e) =>
-                        setStaffForm({
-                          ...staffForm,
-                          name:
-                            e.target.value,
-                        })
+                        setStaffForm(
+                          (previous) => ({
+                            ...previous,
+                            name:
+                              e.target
+                                .value,
+                          })
+                        )
                       }
                       required
                     />
@@ -3457,11 +3894,14 @@ function AdminControl() {
                       }
                       placeholder="University Librarian"
                       onChange={(e) =>
-                        setStaffForm({
-                          ...staffForm,
-                          position:
-                            e.target.value,
-                        })
+                        setStaffForm(
+                          (previous) => ({
+                            ...previous,
+                            position:
+                              e.target
+                                .value,
+                          })
+                        )
                       }
                       required
                     />
@@ -3482,7 +3922,7 @@ function AdminControl() {
                     onChange={(e) =>
                       setStaffFile(
                         e.target
-                          .files[0] ||
+                          .files?.[0] ||
                           null
                       )
                     }
@@ -3515,9 +3955,7 @@ function AdminControl() {
                   <button
                     type="submit"
                     className="primary-button"
-                    disabled={
-                      loading
-                    }
+                    disabled={loading}
                   >
                     {loading
                       ? "Saving..."
@@ -3533,6 +3971,7 @@ function AdminControl() {
                       onClick={
                         resetStaffForm
                       }
+                      disabled={loading}
                     >
                       Cancel
                     </button>
@@ -3546,84 +3985,78 @@ function AdminControl() {
 
             <div className="staff-grid">
 
-              {staff.map(
-                (item) => (
-                  <div
-                    key={
-                      item.id
-                    }
-                    className="staff-card"
-                  >
+              {staff.map((item) => (
+                <div
+                  key={item.id}
+                  className="staff-card"
+                >
 
-                    <div className="staff-photo">
+                  <div className="staff-photo">
 
-                      {item.image ? (
-                        <img
-                          src={
-                            item.image
-                          }
-                          alt={
-                            item.name
-                          }
-                        />
-                      ) : (
-                        <span>
-                          {item.name
-                            ?.charAt(
-                              0
-                            )
-                            .toUpperCase()}
-                        </span>
-                      )}
-
-                    </div>
-
-                    <div className="staff-info">
-
-                      <strong>
-                        {
-                          item.name
-                        }
-                      </strong>
-
+                    {item.image ? (
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                      />
+                    ) : (
                       <span>
-                        {
-                          item.position
-                        }
+                        {item.name
+                          ?.charAt(0)
+                          .toUpperCase()}
                       </span>
-
-                    </div>
-
-                    <div className="action-group">
-
-                      <button
-                        type="button"
-                        className="table-edit"
-                        onClick={() =>
-                          handleEditStaff(
-                            item
-                          )
-                        }
-                      >
-                        Edit
-                      </button>
-
-                      <button
-                        type="button"
-                        className="table-delete"
-                        onClick={() =>
-                          handleDeleteStaff(
-                            item.id
-                          )
-                        }
-                      >
-                        Delete
-                      </button>
-
-                    </div>
+                    )}
 
                   </div>
-                )
+
+                  <div className="staff-info">
+
+                    <strong>
+                      {item.name}
+                    </strong>
+
+                    <span>
+                      {item.position}
+                    </span>
+
+                  </div>
+
+                  <div className="action-group">
+
+                    <button
+                      type="button"
+                      className="table-edit"
+                      onClick={() =>
+                        handleEditStaff(
+                          item
+                        )
+                      }
+                      disabled={loading}
+                    >
+                      Edit
+                    </button>
+
+                    <button
+                      type="button"
+                      className="table-delete"
+                      onClick={() =>
+                        handleDeleteStaff(
+                          item.id
+                        )
+                      }
+                      disabled={loading}
+                    >
+                      Delete
+                    </button>
+
+                  </div>
+
+                </div>
+              ))}
+
+              {staff.length === 0 && (
+                <p className="empty-text">
+                  No staff members found.
+                </p>
               )}
 
             </div>
@@ -3632,16 +4065,16 @@ function AdminControl() {
         )}
 
         {/* ===================================================
-            VISION
+            VISION & MISSION
         ==================================================== */}
 
-        {activeTab ===
-          "vision" && (
+        {activeTab === "vision" && (
           <section className="page-section">
 
             <div className="page-heading">
 
               <div>
+
                 <h3>
                   Vision & Mission
                 </h3>
@@ -3652,6 +4085,7 @@ function AdminControl() {
                   vision and mission
                   statements.
                 </p>
+
               </div>
 
             </div>
@@ -3678,11 +4112,14 @@ function AdminControl() {
                       ""
                     }
                     onChange={(e) =>
-                      setVisionMission({
-                        ...visionMission,
-                        vision:
-                          e.target.value,
-                      })
+                      setVisionMission(
+                        (previous) => ({
+                          ...previous,
+                          vision:
+                            e.target
+                              .value,
+                        })
+                      )
                     }
                     required
                   />
@@ -3702,11 +4139,14 @@ function AdminControl() {
                       ""
                     }
                     onChange={(e) =>
-                      setVisionMission({
-                        ...visionMission,
-                        mission:
-                          e.target.value,
-                      })
+                      setVisionMission(
+                        (previous) => ({
+                          ...previous,
+                          mission:
+                            e.target
+                              .value,
+                        })
+                      )
                     }
                     required
                   />
@@ -3716,11 +4156,11 @@ function AdminControl() {
                 <button
                   type="submit"
                   className="primary-button"
-                  disabled={
-                    loading
-                  }
+                  disabled={loading}
                 >
-                  Save Changes
+                  {loading
+                    ? "Saving..."
+                    : "Save Changes"}
                 </button>
 
               </form>
