@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../services/supabase";
 import "./Library.css";
 import slideshowVideo from "../assets/slideshow.mp4";
@@ -18,6 +18,20 @@ function Library() {
   const [clubNews, setClubNews] = useState([]);
 
   const [loading, setLoading] = useState(true);
+
+  // =====================================================
+  // NEWS CAROUSEL
+  // =====================================================
+
+  const [newsIndex, setNewsIndex] = useState(0);
+  const [newsVisible, setNewsVisible] = useState(3);
+
+  // =====================================================
+  // MODAL
+  // =====================================================
+
+  const [selectedNews, setSelectedNews] = useState(null);
+  const [selectedWhatToKnow, setSelectedWhatToKnow] = useState(null);
 
   // =====================================================
   // MOBILE MENU
@@ -124,7 +138,7 @@ function Library() {
   };
 
   // =====================================================
-  // FETCH CLUB NEWS
+  // FETCH WHAT TO KNOW
   // =====================================================
 
   const fetchClubNews = async () => {
@@ -134,7 +148,7 @@ function Library() {
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.error("Library club news error:", error);
+      console.error("What to Know error:", error);
       return;
     }
 
@@ -242,6 +256,68 @@ function Library() {
   }, []);
 
   // =====================================================
+  // RESPONSIVE NEWS CAROUSEL
+  // =====================================================
+
+  useEffect(() => {
+    const updateVisibleNews = () => {
+      if (window.innerWidth <= 600) {
+        setNewsVisible(1);
+      } else if (window.innerWidth <= 950) {
+        setNewsVisible(2);
+      } else {
+        setNewsVisible(3);
+      }
+    };
+
+    updateVisibleNews();
+
+    window.addEventListener("resize", updateVisibleNews);
+
+    return () => {
+      window.removeEventListener("resize", updateVisibleNews);
+    };
+  }, []);
+
+  // =====================================================
+  // NEWS CAROUSEL LIMIT
+  // =====================================================
+
+  const newsPageCount = useMemo(() => {
+    return Math.max(1, news.length - newsVisible + 1);
+  }, [news.length, newsVisible]);
+
+  useEffect(() => {
+    if (newsIndex > newsPageCount - 1) {
+      setNewsIndex(Math.max(0, newsPageCount - 1));
+    }
+  }, [newsPageCount, newsIndex]);
+
+  // =====================================================
+  // AUTO SLIDE
+  // =====================================================
+
+  useEffect(() => {
+    if (news.length <= newsVisible) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setNewsIndex((current) => {
+        if (current >= newsPageCount - 1) {
+          return 0;
+        }
+
+        return current + 1;
+      });
+    }, 4500);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [news.length, newsVisible, newsPageCount]);
+
+  // =====================================================
   // ESCAPE KEY
   // =====================================================
 
@@ -249,6 +325,8 @@ function Library() {
     const handleEscape = (event) => {
       if (event.key === "Escape") {
         setMenuOpen(false);
+        setSelectedNews(null);
+        setSelectedWhatToKnow(null);
       }
     };
 
@@ -258,6 +336,24 @@ function Library() {
       document.removeEventListener("keydown", handleEscape);
     };
   }, []);
+
+  // =====================================================
+  // LOCK BODY WHEN MODAL IS OPEN
+  // =====================================================
+
+  useEffect(() => {
+    const modalOpen =
+      selectedNews !== null ||
+      selectedWhatToKnow !== null;
+
+    document.body.style.overflow = modalOpen
+      ? "hidden"
+      : "";
+
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [selectedNews, selectedWhatToKnow]);
 
   // =====================================================
   // HELPERS
@@ -298,6 +394,30 @@ function Library() {
   };
 
   // =====================================================
+  // NEWS NAVIGATION
+  // =====================================================
+
+  const nextNews = () => {
+    setNewsIndex((current) => {
+      if (current >= newsPageCount - 1) {
+        return 0;
+      }
+
+      return current + 1;
+    });
+  };
+
+  const previousNews = () => {
+    setNewsIndex((current) => {
+      if (current <= 0) {
+        return newsPageCount - 1;
+      }
+
+      return current - 1;
+    });
+  };
+
+  // =====================================================
   // RENDER
   // =====================================================
 
@@ -334,8 +454,6 @@ function Library() {
             </div>
           </a>
 
-          {/* DESKTOP NAVIGATION */}
-
           <nav className="main-navigation">
 
             <a href="/" onClick={closeMenu}>
@@ -349,8 +467,6 @@ function Library() {
             <a href="/#announcements" onClick={closeMenu}>
               Announcements
             </a>
-
-            {/* SERVICES */}
 
             <div className="nav-dropdown">
 
@@ -415,8 +531,6 @@ function Library() {
             <a href="/#about" onClick={closeMenu}>
               About
             </a>
-
-            {/* QUICK LINKS */}
 
             <div className="nav-dropdown quick-links-dropdown">
 
@@ -486,8 +600,6 @@ function Library() {
             </a>
 
           </nav>
-
-          {/* HEADER ACTIONS */}
 
           <div className="header-actions">
 
@@ -654,15 +766,12 @@ function Library() {
       </div>
 
       {/* =====================================================
-          HERO / FIRST PANE
-          VIDEO BACKGROUND
+          HERO
       ===================================================== */}
 
       <main>
 
         <section className="library-hero">
-
-          {/* BACKGROUND VIDEO */}
 
           <video
             className="library-hero-video"
@@ -679,13 +788,9 @@ function Library() {
             />
           </video>
 
-          {/* VIDEO OVERLAY */}
-
           <div className="library-hero-overlay"></div>
 
           <div className="container library-hero-container">
-
-            {/* HERO CONTENT */}
 
             <div className="library-hero-content">
 
@@ -725,8 +830,6 @@ function Library() {
               </div>
 
             </div>
-
-            {/* OPERATING HOURS */}
 
             <aside
               className="library-hero-hours"
@@ -829,7 +932,7 @@ function Library() {
         </div>
 
         {/* =====================================================
-            LATEST NEWS
+            LATEST NEWS CAROUSEL
         ===================================================== */}
 
         <section
@@ -852,57 +955,124 @@ function Library() {
 
             ) : news.length > 0 ? (
 
-              <div className="library-card-grid">
+              <div className="latest-news-carousel">
 
-                {news.map((item) => (
+                <button
+                  type="button"
+                  className="latest-news-arrow latest-news-arrow-left"
+                  onClick={previousNews}
+                  aria-label="Previous news"
+                >
+                  ←
+                </button>
 
-                  <article
-                    className="library-news-card"
-                    key={item.id}
+                <div className="latest-news-viewport">
+
+                  <div
+                    className="latest-news-track"
+                    style={{
+                      "--news-index": newsIndex,
+                      "--news-visible": newsVisible,
+                    }}
                   >
 
-                    {item.image_url ? (
+                    {news.map((item) => (
 
-                      <div className="library-card-image">
+                      <div
+                        className="latest-news-slide"
+                        key={item.id}
+                      >
 
-                        <img
-                          src={item.image_url}
-                          alt={item.title}
-                        />
+                        <button
+                          type="button"
+                          className="latest-news-card"
+                          onClick={() => setSelectedNews(item)}
+                        >
+
+                          {item.image_url ? (
+
+                            <div className="latest-news-image">
+
+                              <img
+                                src={item.image_url}
+                                alt={item.title}
+                              />
+
+                            </div>
+
+                          ) : (
+
+                            <div className="latest-news-image latest-news-no-image">
+                              <span>
+                                LIBRARY NEWS
+                              </span>
+                            </div>
+
+                          )}
+
+                          <div className="latest-news-content">
+
+                            {item.date && (
+                              <span className="latest-news-date">
+                                {formatDate(item.date)}
+                              </span>
+                            )}
+
+                            <h3>
+                              {item.title}
+                            </h3>
+
+                            <p>
+                              {item.body}
+                            </p>
+
+                            <span className="latest-news-read">
+                              View Story
+                              <span>→</span>
+                            </span>
+
+                          </div>
+
+                        </button>
 
                       </div>
 
-                    ) : (
+                    ))}
 
-                      <div className="library-card-image library-no-image">
-                        <span>LIBRARY</span>
-                      </div>
+                  </div>
 
-                    )}
+                </div>
 
-                    <div className="library-card-content">
+                <button
+                  type="button"
+                  className="latest-news-arrow latest-news-arrow-right"
+                  onClick={nextNews}
+                  aria-label="Next news"
+                >
+                  →
+                </button>
 
-                      {item.date && (
-                        <span className="library-content-date">
-                          {formatDate(item.date)}
-                        </span>
-                      )}
+                <div className="latest-news-dots">
 
-                      <h3>
-                        {item.title}
-                      </h3>
+                  {Array.from({
+                    length: newsPageCount,
+                  }).map((_, index) => (
 
-                      <p className="library-card-text">
-                        {item.body}
-                      </p>
+                    <button
+                      type="button"
+                      key={index}
+                      className={
+                        index === newsIndex
+                          ? "active"
+                          : ""
+                      }
+                      onClick={() => setNewsIndex(index)}
+                      aria-label={`Go to news slide ${index + 1}`}
+                    />
 
-                      <ReadMore />
+                  ))}
 
-                    </div>
-
-                  </article>
-
-                ))}
+                </div>
 
               </div>
 
@@ -917,41 +1087,45 @@ function Library() {
         </section>
 
         {/* =====================================================
-            CLUB NEWS
+            WHAT TO KNOW
         ===================================================== */}
 
         <section
-          className="library-section library-club-news-section"
+          className="library-section what-to-know-section"
           id="club-news"
         >
 
           <div className="container">
 
             <SectionHeading
-              label="CLUB UPDATES"
-              title="Club"
-              highlight="News."
-              description="Read the latest updates, announcements, and activities from library clubs."
+              label="INFORMATION & UPDATES"
+              title="What to"
+              highlight="Know."
+              description="Important information, reminders, activities, and updates from the library."
             />
 
             {loading ? (
 
-              <LoadingState text="Loading club news..." />
+              <LoadingState text="Loading information..." />
 
             ) : clubNews.length > 0 ? (
 
-              <div className="library-card-grid">
+              <div className="what-to-know-grid">
 
                 {clubNews.map((item) => (
 
-                  <article
-                    className="library-news-card"
+                  <button
+                    type="button"
+                    className="what-to-know-card"
                     key={item.id}
+                    onClick={() =>
+                      setSelectedWhatToKnow(item)
+                    }
                   >
 
                     {item.image_url ? (
 
-                      <div className="library-card-image">
+                      <div className="what-to-know-image">
 
                         <img
                           src={item.image_url}
@@ -962,33 +1136,29 @@ function Library() {
 
                     ) : (
 
-                      <div className="library-card-image library-no-image">
-                        <span>CLUB NEWS</span>
+                      <div className="what-to-know-image what-to-know-no-image">
+
+                        <span>
+                          WHAT TO KNOW
+                        </span>
+
                       </div>
 
                     )}
 
-                    <div className="library-card-content">
-
-                      {item.date && (
-                        <span className="library-content-date">
-                          {formatDate(item.date)}
-                        </span>
-                      )}
+                    <div className="what-to-know-title">
 
                       <h3>
                         {item.title}
                       </h3>
 
-                      <p className="library-card-text">
-                        {item.body}
-                      </p>
-
-                      <ReadMore />
+                      <span>
+                        View information →
+                      </span>
 
                     </div>
 
-                  </article>
+                  </button>
 
                 ))}
 
@@ -996,7 +1166,7 @@ function Library() {
 
             ) : (
 
-              <EmptyState text="No club news has been posted yet." />
+              <EmptyState text="No information has been posted yet." />
 
             )}
 
@@ -1051,7 +1221,9 @@ function Library() {
                     ) : (
 
                       <div className="library-club-image library-no-image">
-                        <span>LIBRARY</span>
+                        <span>
+                          LIBRARY
+                        </span>
                       </div>
 
                     )}
@@ -1137,7 +1309,9 @@ function Library() {
                     ) : (
 
                       <div className="library-card-image library-no-image">
-                        <span>LIBRARY SPACE</span>
+                        <span>
+                          LIBRARY SPACE
+                        </span>
                       </div>
 
                     )}
@@ -1294,7 +1468,7 @@ function Library() {
               </a>
 
               <a href="#club-news">
-                Club News
+                What to Know
               </a>
 
               <a href="#library-information">
@@ -1346,6 +1520,36 @@ function Library() {
 
       </footer>
 
+      {/* =====================================================
+          LATEST NEWS MODAL
+      ===================================================== */}
+
+      {selectedNews && (
+
+        <ContentModal
+          item={selectedNews}
+          type="news"
+          formatDate={formatDate}
+          onClose={() => setSelectedNews(null)}
+        />
+
+      )}
+
+      {/* =====================================================
+          WHAT TO KNOW MODAL
+      ===================================================== */}
+
+      {selectedWhatToKnow && (
+
+        <ContentModal
+          item={selectedWhatToKnow}
+          type="information"
+          formatDate={formatDate}
+          onClose={() => setSelectedWhatToKnow(null)}
+        />
+
+      )}
+
     </div>
   );
 }
@@ -1385,6 +1589,93 @@ function SectionHeading({
 }
 
 // =====================================================
+// CONTENT MODAL
+// =====================================================
+
+function ContentModal({
+  item,
+  type,
+  formatDate,
+  onClose,
+}) {
+  return (
+    <div
+      className="library-modal-backdrop"
+      onMouseDown={(event) => {
+        if (
+          event.target === event.currentTarget
+        ) {
+          onClose();
+        }
+      }}
+    >
+
+      <div
+        className="library-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label={item.title}
+      >
+
+        <button
+          type="button"
+          className="library-modal-close"
+          onClick={onClose}
+          aria-label="Close"
+        >
+          ×
+        </button>
+
+        {item.image_url ? (
+
+          <div className="library-modal-image">
+
+            <img
+              src={item.image_url}
+              alt={item.title}
+            />
+
+          </div>
+
+        ) : null}
+
+        <div className="library-modal-content">
+
+          <span className="library-modal-label">
+            {type === "news"
+              ? "LIBRARY NEWS"
+              : "WHAT TO KNOW"}
+          </span>
+
+          {item.date && (
+
+            <span className="library-modal-date">
+              {formatDate(item.date)}
+            </span>
+
+          )}
+
+          <h2>
+            {item.title}
+          </h2>
+
+          <div className="library-modal-divider"></div>
+
+          <p>
+            {item.body ||
+              item.description ||
+              "No additional information is available."}
+          </p>
+
+        </div>
+
+      </div>
+
+    </div>
+  );
+}
+
+// =====================================================
 // READ MORE
 // =====================================================
 
@@ -1402,7 +1693,8 @@ function ReadMore() {
 
     if (!text) return;
 
-    const expanded = text.classList.toggle("expanded");
+    const expanded =
+      text.classList.toggle("expanded");
 
     button.textContent = expanded
       ? "Read Less"

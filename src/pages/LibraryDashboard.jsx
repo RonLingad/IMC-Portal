@@ -261,7 +261,7 @@ function LibraryDashboard() {
     },
     {
       id: "club-news",
-      label: "Club News",
+      label: "What To Know",
       icon: <Megaphone size={19} />,
     },
     {
