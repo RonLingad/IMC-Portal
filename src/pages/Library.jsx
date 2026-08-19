@@ -91,7 +91,7 @@ function Library() {
     const { data, error } = await supabase
       .from("library_spaces")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: true });
 
     if (error) {
       console.error("Library spaces error:", error);
@@ -127,7 +127,7 @@ function Library() {
     const { data, error } = await supabase
       .from("library_clubs")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: true });
 
     if (error) {
       console.error("Library information error:", error);
@@ -145,7 +145,7 @@ function Library() {
     const { data, error } = await supabase
       .from("library_club_news")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: true });
 
     if (error) {
       console.error("What to Know error:", error);
