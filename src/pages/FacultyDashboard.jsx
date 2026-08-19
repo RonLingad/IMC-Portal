@@ -16,26 +16,62 @@ import {
   Flag,
   Trash2,
   History,
+  RefreshCw,
+  Eye,
 } from "lucide-react";
 
 import { supabase } from "../services/supabase";
 import "./FacultyDashboard.css";
 
 function FacultyDashboard() {
-  const [activeSection, setActiveSection] = useState("request");
-  const [activeTab, setActiveTab] = useState("library");
+  /* =====================================================
+     NAVIGATION
+  ===================================================== */
+
+  const [activeSection, setActiveSection] = useState(null);
+  const [activeRequestType, setActiveRequestType] =
+    useState("library");
+
+  /* =====================================================
+     USER
+  ===================================================== */
 
   const [user, setUser] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
 
+  /* =====================================================
+     REQUESTS
+  ===================================================== */
+
   const [requests, setRequests] = useState([]);
-  const [loadingRequests, setLoadingRequests] = useState(true);
+  const [loadingRequests, setLoadingRequests] =
+    useState(true);
 
   const [submitting, setSubmitting] = useState(false);
-  const [cancellingId, setCancellingId] = useState(null);
+  const [cancellingId, setCancellingId] =
+    useState(null);
+  const [refreshing, setRefreshing] =
+    useState(false);
 
-  const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [loggingOut, setLoggingOut] = useState(false);
+  /* =====================================================
+     DETAILS MODAL
+  ===================================================== */
+
+  const [selectedRequest, setSelectedRequest] =
+    useState(null);
+
+  /* =====================================================
+     LOGOUT
+  ===================================================== */
+
+  const [showLogoutModal, setShowLogoutModal] =
+    useState(false);
+  const [loggingOut, setLoggingOut] =
+    useState(false);
+
+  /* =====================================================
+     NOTIFICATION
+  ===================================================== */
 
   const [notification, setNotification] = useState({
     show: false,
@@ -43,6 +79,10 @@ function FacultyDashboard() {
     title: "",
     message: "",
   });
+
+  /* =====================================================
+     FORM
+  ===================================================== */
 
   const [form, setForm] = useState({
     fullName: "",
@@ -70,7 +110,11 @@ function FacultyDashboard() {
      NOTIFICATION
   ===================================================== */
 
-  const showNotification = (type, title, message) => {
+  const showNotification = (
+    type,
+    title,
+    message
+  ) => {
     setNotification({
       show: true,
       type,
@@ -97,15 +141,23 @@ function FacultyDashboard() {
      LOAD REQUESTS
   ===================================================== */
 
-  const loadRequests = async (email) => {
-    setLoadingRequests(true);
+  const loadRequests = async (
+    email,
+    showRefreshNotification = false
+  ) => {
+    if (!email) {
+      setRequests([]);
+      setLoadingRequests(false);
+      return;
+    }
+
+    if (showRefreshNotification) {
+      setRefreshing(true);
+    } else {
+      setLoadingRequests(true);
+    }
 
     try {
-      if (!email) {
-        setRequests([]);
-        return;
-      }
-
       const { data, error } = await supabase
         .from("library_requests")
         .select("*")
@@ -114,21 +166,36 @@ function FacultyDashboard() {
           ascending: false,
         });
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
       setRequests(data || []);
+
+      if (showRefreshNotification) {
+        showNotification(
+          "success",
+          "Requests updated",
+          "Your request statuses have been refreshed."
+        );
+      }
     } catch (error) {
-      console.error("Request loading error:", error);
+      console.error(
+        "Request loading error:",
+        error
+      );
+
+      setRequests([]);
 
       showNotification(
         "error",
         "Unable to load requests",
-        error.message || "Please try again."
+        error.message ||
+          "Please try again."
       );
-
-      setRequests([]);
     } finally {
       setLoadingRequests(false);
+      setRefreshing(false);
     }
   };
 
@@ -148,9 +215,13 @@ function FacultyDashboard() {
           error,
         } = await supabase.auth.getSession();
 
-        if (error) throw error;
+        if (error) {
+          throw error;
+        }
 
-        if (!mounted) return;
+        if (!mounted) {
+          return;
+        }
 
         if (!session?.user) {
           setUser(null);
@@ -175,11 +246,18 @@ function FacultyDashboard() {
             "",
         }));
 
-        await loadRequests(currentUser.email);
+        await loadRequests(
+          currentUser.email
+        );
       } catch (error) {
-        console.error("User initialization error:", error);
+        console.error(
+          "User initialization error:",
+          error
+        );
 
-        if (!mounted) return;
+        if (!mounted) {
+          return;
+        }
 
         setUser(null);
         setRequests([]);
@@ -189,7 +267,8 @@ function FacultyDashboard() {
         showNotification(
           "error",
           "Unable to load account",
-          error.message || "Please login again."
+          error.message ||
+            "Please login again."
         );
 
         window.setTimeout(() => {
@@ -208,47 +287,62 @@ function FacultyDashboard() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!mounted) return;
+    } =
+      supabase.auth.onAuthStateChange(
+        (_event, session) => {
+          if (!mounted) {
+            return;
+          }
 
-      const currentUser = session?.user || null;
+          const currentUser =
+            session?.user || null;
 
-      if (!currentUser) {
-        setUser(null);
-        setRequests([]);
+          if (!currentUser) {
+            setUser(null);
+            setRequests([]);
 
-        setForm((current) => ({
-          ...current,
-          email: "",
-          fullName: "",
-        }));
+            setForm((current) => ({
+              ...current,
+              email: "",
+              fullName: "",
+            }));
 
-        setLoadingRequests(false);
+            setLoadingRequests(false);
 
-        if (window.location.pathname !== "/login") {
-          window.location.href = "/login";
+            if (
+              window.location.pathname !==
+              "/login"
+            ) {
+              window.location.href =
+                "/login";
+            }
+
+            return;
+          }
+
+          setUser(currentUser);
+
+          setForm((current) => ({
+            ...current,
+            email:
+              currentUser.email || "",
+            fullName:
+              currentUser.user_metadata
+                ?.full_name ||
+              currentUser.user_metadata
+                ?.name ||
+              current.fullName,
+          }));
+
+          window.setTimeout(() => {
+            if (mounted) {
+              loadRequests(
+                currentUser.email
+              );
+            }
+          }, 0);
         }
-
-        return;
-      }
-
-      setUser(currentUser);
-
-      setForm((current) => ({
-        ...current,
-        email: currentUser.email || "",
-        fullName:
-          currentUser.user_metadata?.full_name ||
-          currentUser.user_metadata?.name ||
-          current.fullName,
-      }));
-
-      window.setTimeout(() => {
-        if (mounted) {
-          loadRequests(currentUser.email);
-        }
-      }, 0);
-    });
+      );
 
     return () => {
       mounted = false;
@@ -257,7 +351,7 @@ function FacultyDashboard() {
   }, []);
 
   /* =====================================================
-     FORM
+     FORM HANDLERS
   ===================================================== */
 
   const handleChange = (e) => {
@@ -271,7 +365,10 @@ function FacultyDashboard() {
 
   const handleLibraryCheckbox = (value) => {
     setForm((current) => {
-      const exists = current.requestItems.includes(value);
+      const exists =
+        current.requestItems.includes(
+          value
+        );
 
       return {
         ...current,
@@ -279,14 +376,22 @@ function FacultyDashboard() {
           ? current.requestItems.filter(
               (item) => item !== value
             )
-          : [...current.requestItems, value],
+          : [
+              ...current.requestItems,
+              value,
+            ],
       };
     });
   };
 
-  const handleAVREquipmentCheckbox = (value) => {
+  const handleAVREquipmentCheckbox = (
+    value
+  ) => {
     setForm((current) => {
-      const exists = current.avrEquipment.includes(value);
+      const exists =
+        current.avrEquipment.includes(
+          value
+        );
 
       return {
         ...current,
@@ -294,7 +399,10 @@ function FacultyDashboard() {
           ? current.avrEquipment.filter(
               (item) => item !== value
             )
-          : [...current.avrEquipment, value],
+          : [
+              ...current.avrEquipment,
+              value,
+            ],
       };
     });
   };
@@ -331,8 +439,13 @@ function FacultyDashboard() {
       return false;
     }
 
-    if (activeTab === "library") {
-      if (form.requestItems.length === 0) {
+    if (
+      activeRequestType ===
+      "library"
+    ) {
+      if (
+        form.requestItems.length === 0
+      ) {
         showNotification(
           "error",
           "Select a service",
@@ -342,7 +455,9 @@ function FacultyDashboard() {
       }
 
       if (
-        form.requestItems.includes("Other") &&
+        form.requestItems.includes(
+          "Other"
+        ) &&
         !form.otherRequest.trim()
       ) {
         showNotification(
@@ -381,7 +496,10 @@ function FacultyDashboard() {
       }
     }
 
-    if (activeTab === "avr") {
+    if (
+      activeRequestType ===
+      "avr"
+    ) {
       if (!form.dateNeeded) {
         showNotification(
           "error",
@@ -404,13 +522,16 @@ function FacultyDashboard() {
         showNotification(
           "error",
           "Details required",
-          "Please provide a short description of your request."
+          "Please provide a short description."
         );
         return false;
       }
     }
 
-    if (activeTab === "technical") {
+    if (
+      activeRequestType ===
+      "technical"
+    ) {
       if (!form.priority) {
         showNotification(
           "error",
@@ -438,25 +559,66 @@ function FacultyDashboard() {
   ===================================================== */
 
   const formatDate = (date) => {
-    if (!date) return "-";
+    if (!date) {
+      return "-";
+    }
 
-    const parsedDate = new Date(`${date}T00:00:00`);
+    const parsedDate =
+      new Date(`${date}T00:00:00`);
 
-    if (Number.isNaN(parsedDate.getTime())) {
+    if (
+      Number.isNaN(
+        parsedDate.getTime()
+      )
+    ) {
       return date;
     }
 
-    return parsedDate.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
+    return parsedDate.toLocaleDateString(
+      "en-US",
+      {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }
+    );
+  };
+
+  const formatDateTime = (date) => {
+    if (!date) {
+      return "-";
+    }
+
+    const parsedDate =
+      new Date(date);
+
+    if (
+      Number.isNaN(
+        parsedDate.getTime()
+      )
+    ) {
+      return "-";
+    }
+
+    return parsedDate.toLocaleString(
+      "en-US",
+      {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      }
+    );
   };
 
   const formatTime = (time) => {
-    if (!time) return "-";
+    if (!time) {
+      return "-";
+    }
 
-    const [hours, minutes] = time.split(":");
+    const [hours, minutes] =
+      time.split(":");
 
     const date = new Date();
 
@@ -467,10 +629,13 @@ function FacultyDashboard() {
       0
     );
 
-    return date.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-    });
+    return date.toLocaleTimeString(
+      "en-US",
+      {
+        hour: "numeric",
+        minute: "2-digit",
+      }
+    );
   };
 
   /* =====================================================
@@ -480,9 +645,13 @@ function FacultyDashboard() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (submitting) return;
+    if (submitting) {
+      return;
+    }
 
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      return;
+    }
 
     setSubmitting(true);
 
@@ -490,26 +659,33 @@ function FacultyDashboard() {
       const {
         data: { session },
         error: sessionError,
-      } = await supabase.auth.getSession();
+      } =
+        await supabase.auth.getSession();
 
-      if (sessionError) throw sessionError;
+      if (sessionError) {
+        throw sessionError;
+      }
 
       if (!session?.user) {
         showNotification(
           "error",
           "Session expired",
-          "Please login again before submitting."
+          "Please login again."
         );
 
         window.setTimeout(() => {
-          window.location.href = "/login";
+          window.location.href =
+            "/login";
         }, 1000);
 
         return;
       }
 
-      const authenticatedUser = session.user;
-      const requesterEmail = authenticatedUser.email;
+      const authenticatedUser =
+        session.user;
+
+      const requesterEmail =
+        authenticatedUser.email;
 
       if (!requesterEmail) {
         throw new Error(
@@ -518,10 +694,21 @@ function FacultyDashboard() {
       }
 
       let details = "";
+      let internalRequestType = "";
+      let requestDate = null;
 
       /* ---------------- LIBRARY ---------------- */
 
-      if (activeTab === "library") {
+      if (
+        activeRequestType ===
+        "library"
+      ) {
+        internalRequestType =
+          "Library Request";
+
+        requestDate =
+          form.dateNeeded;
+
         details = `Department: ${form.department}
 
 Services Requested:
@@ -530,7 +717,9 @@ ${form.requestItems
   .join("\n")}`;
 
         if (
-          form.requestItems.includes("Other") &&
+          form.requestItems.includes(
+            "Other"
+          ) &&
           form.otherRequest.trim()
         ) {
           details += `
@@ -541,8 +730,12 @@ ${form.otherRequest.trim()}`;
 
         details += `
 
-Date Needed: ${formatDate(form.dateNeeded)}
-Time Needed: ${formatTime(form.timeNeeded)}
+Date Needed: ${formatDate(
+          form.dateNeeded
+        )}
+Time Needed: ${formatTime(
+          form.timeNeeded
+        )}
 
 Description:
 ${form.details.trim()}`;
@@ -550,10 +743,22 @@ ${form.details.trim()}`;
 
       /* ---------------- AVR ---------------- */
 
-      if (activeTab === "avr") {
+      if (
+        activeRequestType ===
+        "avr"
+      ) {
+        internalRequestType =
+          "AVR Request";
+
+        requestDate =
+          form.dateNeeded;
+
         details = `Department: ${form.department}`;
 
-        if (form.avrEquipment.length > 0) {
+        if (
+          form.avrEquipment.length >
+          0
+        ) {
           details += `
 
 Equipment Needed:
@@ -570,7 +775,8 @@ ${form.avrService}`;
         }
 
         if (
-          form.avrService === "Other" &&
+          form.avrService ===
+            "Other" &&
           form.otherAVRService.trim()
         ) {
           details += `
@@ -582,14 +788,18 @@ ${form.otherAVRService.trim()}`;
         if (form.venue.trim()) {
           details += `
 
-Location / Venue Needed:
+Location / Venue:
 ${form.venue.trim()}`;
         }
 
         details += `
 
-Date Needed: ${formatDate(form.dateNeeded)}
-Time Needed: ${formatTime(form.timeNeeded)}`;
+Date Needed: ${formatDate(
+          form.dateNeeded
+        )}
+Time Needed: ${formatTime(
+          form.timeNeeded
+        )}`;
 
         if (form.duration.trim()) {
           details += `
@@ -606,7 +816,13 @@ ${form.details.trim()}`;
 
       /* ---------------- TECHNICAL ---------------- */
 
-      if (activeTab === "technical") {
+      if (
+        activeRequestType ===
+        "technical"
+      ) {
+        internalRequestType =
+          "Technical Assistance";
+
         details = `Department: ${form.department}
 
 Priority:
@@ -616,39 +832,27 @@ Problem / Description:
 ${form.details.trim()}`;
       }
 
-      let internalRequestType = "";
+      const { data, error } =
+        await supabase
+          .from("library_requests")
+          .insert({
+            requester_name:
+              form.fullName.trim(),
+            requester_email:
+              requesterEmail,
+            request_type:
+              internalRequestType,
+            request_date:
+              requestDate,
+            details,
+            status: "Pending",
+          })
+          .select()
+          .single();
 
-      if (activeTab === "library") {
-        internalRequestType = "Library Request";
+      if (error) {
+        throw error;
       }
-
-      if (activeTab === "avr") {
-        internalRequestType = "AVR Request";
-      }
-
-      if (activeTab === "technical") {
-        internalRequestType = "Technical Assistance";
-      }
-
-      const requestDate =
-        activeTab === "technical"
-          ? null
-          : form.dateNeeded;
-
-      const { data, error } = await supabase
-        .from("library_requests")
-        .insert({
-          requester_name: form.fullName.trim(),
-          requester_email: requesterEmail,
-          request_type: internalRequestType,
-          request_date: requestDate,
-          details,
-          status: "Pending",
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
 
       setRequests((current) => [
         data,
@@ -673,7 +877,8 @@ ${form.details.trim()}`;
       showNotification(
         "error",
         "Unable to submit request",
-        error.message || "Something went wrong."
+        error.message ||
+          "Something went wrong."
       );
     } finally {
       setSubmitting(false);
@@ -681,17 +886,37 @@ ${form.details.trim()}`;
   };
 
   /* =====================================================
-     CANCEL
+     CANCEL REQUEST
   ===================================================== */
 
-  const handleCancelRequest = async (request) => {
-    if (request.status !== "Pending") return;
+  const handleCancelRequest = async (
+    request
+  ) => {
+    if (!request) {
+      return;
+    }
 
-    const confirmed = window.confirm(
-      "Are you sure you want to cancel this request?"
-    );
+    if (
+      request.status !==
+      "Pending"
+    ) {
+      showNotification(
+        "error",
+        "Cannot cancel request",
+        "Only pending requests can be cancelled."
+      );
 
-    if (!confirmed) return;
+      return;
+    }
+
+    const confirmed =
+      window.confirm(
+        "Are you sure you want to cancel this request?"
+      );
+
+    if (!confirmed) {
+      return;
+    }
 
     setCancellingId(request.id);
 
@@ -699,9 +924,12 @@ ${form.details.trim()}`;
       const {
         data: { session },
         error: sessionError,
-      } = await supabase.auth.getSession();
+      } =
+        await supabase.auth.getSession();
 
-      if (sessionError) throw sessionError;
+      if (sessionError) {
+        throw sessionError;
+      }
 
       if (!session?.user) {
         showNotification(
@@ -710,26 +938,33 @@ ${form.details.trim()}`;
           "Please login again."
         );
 
-        window.setTimeout(() => {
-          window.location.href = "/login";
-        }, 1000);
-
         return;
       }
 
-      const userEmail = session.user.email;
+      const userEmail =
+        session.user.email;
 
-      const { data, error } = await supabase
-        .from("library_requests")
-        .update({
-          status: "Cancelled",
-        })
-        .eq("id", request.id)
-        .eq("requester_email", userEmail)
-        .select()
-        .single();
+      const { data, error } =
+        await supabase
+          .from("library_requests")
+          .update({
+            status: "Cancelled",
+          })
+          .eq("id", request.id)
+          .eq(
+            "requester_email",
+            userEmail
+          )
+          .eq(
+            "status",
+            "Pending"
+          )
+          .select()
+          .single();
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
       setRequests((current) =>
         current.map((item) =>
@@ -739,10 +974,12 @@ ${form.details.trim()}`;
         )
       );
 
+      setSelectedRequest(null);
+
       showNotification(
         "success",
         "Request cancelled",
-        "Your request has been cancelled."
+        "Your request has been cancelled successfully."
       );
     } catch (error) {
       console.error(
@@ -753,7 +990,8 @@ ${form.details.trim()}`;
       showNotification(
         "error",
         "Unable to cancel request",
-        error.message || "Please try again."
+        error.message ||
+          "Please try again."
       );
     } finally {
       setCancellingId(null);
@@ -761,15 +999,14 @@ ${form.details.trim()}`;
   };
 
   /* =====================================================
-     RESET
+     RESET FORM
   ===================================================== */
 
   const resetForm = () => {
     setForm((current) => ({
-      ...current,
-
       fullName:
-        user?.user_metadata?.full_name ||
+        user?.user_metadata
+          ?.full_name ||
         user?.user_metadata?.name ||
         current.fullName ||
         "",
@@ -808,13 +1045,17 @@ ${form.details.trim()}`;
   };
 
   const closeLogoutModal = () => {
-    if (loggingOut) return;
+    if (loggingOut) {
+      return;
+    }
 
     setShowLogoutModal(false);
   };
 
   const handleLogout = async () => {
-    if (loggingOut) return;
+    if (loggingOut) {
+      return;
+    }
 
     setLoggingOut(true);
 
@@ -822,7 +1063,9 @@ ${form.details.trim()}`;
       const { error } =
         await supabase.auth.signOut();
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
       setUser(null);
       setRequests([]);
@@ -841,7 +1084,8 @@ ${form.details.trim()}`;
       showNotification(
         "error",
         "Unable to logout",
-        error.message || "Please try again."
+        error.message ||
+          "Please try again."
       );
     }
   };
@@ -850,63 +1094,90 @@ ${form.details.trim()}`;
      NAVIGATION
   ===================================================== */
 
-  const changeSection = (section) => {
-    setActiveSection(section);
-
-    if (section === "request") {
-      resetForm();
-    }
-  };
-
-  const changeTab = (tab) => {
-    setActiveTab(tab);
+  const openRequest = (type) => {
+    setActiveRequestType(type);
+    setActiveSection("request");
     resetForm();
   };
 
+  const openTrack = () => {
+    setActiveSection("track");
+  };
+
+  const openHistory = () => {
+    setActiveSection("history");
+  };
+
   /* =====================================================
-     HELPERS
+     STATUS
   ===================================================== */
 
   const getStatusClass = (status) => {
-    return (status || "Pending")
-      .toLowerCase()
-      .replaceAll(" ", "-");
+    const normalizedStatus =
+      (status || "Pending")
+        .toString()
+        .trim()
+        .toLowerCase()
+        .replaceAll(" ", "-");
+
+    return `status-${normalizedStatus}`;
   };
 
   const getStatusIcon = (status) => {
-    switch (status) {
-      case "Accepted":
-      case "Completed":
-        return <CheckCircle2 size={16} />;
+    const normalizedStatus =
+      (status || "Pending")
+        .toString()
+        .trim()
+        .toLowerCase();
 
-      case "Not Available":
-      case "Cancelled":
-        return <XCircle size={16} />;
+    switch (normalizedStatus) {
+      case "accepted":
+      case "completed":
+        return (
+          <CheckCircle2 size={17} />
+        );
+
+      case "not available":
+      case "cancelled":
+        return (
+          <XCircle size={17} />
+        );
+
+      case "in progress":
+        return (
+          <RefreshCw size={17} />
+        );
 
       default:
-        return <Clock3 size={16} />;
+        return <Clock3 size={17} />;
     }
   };
 
-  const getRequestIcon = (requestType) => {
-    if (
-      requestType?.toLowerCase().includes("avr")
-    ) {
-      return <MonitorPlay size={20} />;
-    }
-
-    if (
+  const getRequestIcon = (
+    requestType
+  ) => {
+    const type =
       requestType
-        ?.toLowerCase()
-        .includes("technical")
-    ) {
-      return <Wrench size={20} />;
+        ?.toLowerCase() || "";
+
+    if (type.includes("avr")) {
+      return (
+        <MonitorPlay size={19} />
+      );
     }
 
-    return <BookOpen size={20} />;
+    if (
+      type.includes("technical")
+    ) {
+      return <Wrench size={19} />;
+    }
+
+    return <BookOpen size={19} />;
   };
 
-  const getRequestTitle = (request) => {
+  const getRequestTitle = (
+    request
+  ) => {
     if (
       request.request_type ===
       "AVR Request"
@@ -918,7 +1189,7 @@ ${form.details.trim()}`;
       request.request_type ===
       "Technical Assistance"
     ) {
-      return "Technical Assistance";
+      return "Technical Request";
     }
 
     return "Library Request";
@@ -928,239 +1199,311 @@ ${form.details.trim()}`;
      REQUEST FILTERS
   ===================================================== */
 
-  const activeRequests = requests.filter(
-    (request) =>
-      request.status !== "Completed" &&
-      request.status !== "Cancelled"
-  );
+  const activeRequests =
+    requests.filter((request) => {
+      const status =
+        (
+          request.status ||
+          "Pending"
+        )
+          .toString()
+          .trim()
+          .toLowerCase();
 
-  const historyRequests = requests.filter(
-    (request) =>
-      request.status === "Completed" ||
-      request.status === "Cancelled"
-  );
+      return (
+        status !== "completed" &&
+        status !== "cancelled"
+      );
+    });
 
-  /* =====================================================
-     SCHEDULE
-  ===================================================== */
+  const historyRequests =
+    requests.filter((request) => {
+      const status =
+        (
+          request.status || ""
+        )
+          .toString()
+          .trim()
+          .toLowerCase();
 
-  const renderScheduleFields = () => (
-    <div className="faculty-form-row faculty-form-row-three">
-      <div className="faculty-form-group">
-        <label>
-          Date Needed <span>*</span>
-        </label>
-
-        <input
-          type="date"
-          name="dateNeeded"
-          value={form.dateNeeded}
-          onChange={handleChange}
-          required
-        />
-      </div>
-
-      <div className="faculty-form-group">
-        <label>
-          Time Needed <span>*</span>
-        </label>
-
-        <input
-          type="time"
-          name="timeNeeded"
-          value={form.timeNeeded}
-          onChange={handleChange}
-          required
-        />
-      </div>
-
-      <div className="faculty-form-group">
-        <label>
-          Duration
-        </label>
-
-        <input
-          type="text"
-          name="duration"
-          value={form.duration}
-          onChange={handleChange}
-          placeholder="Example: 2 hours"
-        />
-      </div>
-    </div>
-  );
+      return (
+        status === "completed" ||
+        status === "cancelled"
+      );
+    });
 
   /* =====================================================
      PERSONAL INFORMATION
   ===================================================== */
 
-  const renderPersonalInformation = () => (
-    <>
-      <div className="faculty-simple-section">
-        <div className="faculty-simple-title">
-          <span>1</span>
+  const renderPersonalInformation =
+    () => (
+      <div className="faculty-form-section">
+        <div className="faculty-section-number">
+          1
+        </div>
 
-          <div>
+        <div className="faculty-form-section-content">
+          <div className="faculty-form-section-title">
             <h3>Your Information</h3>
             <p>
               Confirm your basic information.
             </p>
           </div>
-        </div>
 
-        <div className="faculty-form-row">
+          <div className="faculty-form-row">
+            <div className="faculty-form-group">
+              <label>
+                Full Name{" "}
+                <span>*</span>
+              </label>
+
+              <input
+                type="text"
+                name="fullName"
+                value={form.fullName}
+                onChange={
+                  handleChange
+                }
+                placeholder="Full name"
+              />
+            </div>
+
+            <div className="faculty-form-group">
+              <label>
+                Email{" "}
+                <span>*</span>
+              </label>
+
+              <input
+                type="email"
+                name="email"
+                value={form.email}
+                onChange={
+                  handleChange
+                }
+                placeholder="Email address"
+              />
+            </div>
+          </div>
+
           <div className="faculty-form-group">
             <label>
-              Full Name <span>*</span>
+              Department{" "}
+              <span>*</span>
             </label>
 
             <input
               type="text"
-              name="fullName"
-              value={form.fullName}
-              onChange={handleChange}
-              placeholder="Full name"
-              required
+              name="department"
+              value={
+                form.department
+              }
+              onChange={
+                handleChange
+              }
+              placeholder="Department"
             />
           </div>
+        </div>
+      </div>
+    );
 
-          <div className="faculty-form-group">
-            <label>
-              Email <span>*</span>
-            </label>
+  /* =====================================================
+     SCHEDULE
+  ===================================================== */
 
-            <input
-              type="email"
-              name="email"
-              value={form.email}
-              onChange={handleChange}
-              placeholder="Email address"
-              required
-            />
-          </div>
+  const renderScheduleFields =
+    () => (
+      <div className="faculty-form-row faculty-form-row-three">
+        <div className="faculty-form-group">
+          <label>
+            Date Needed{" "}
+            <span>*</span>
+          </label>
+
+          <input
+            type="date"
+            name="dateNeeded"
+            value={
+              form.dateNeeded
+            }
+            onChange={
+              handleChange
+            }
+          />
         </div>
 
         <div className="faculty-form-group">
           <label>
-            Department <span>*</span>
+            Time Needed{" "}
+            <span>*</span>
+          </label>
+
+          <input
+            type="time"
+            name="timeNeeded"
+            value={
+              form.timeNeeded
+            }
+            onChange={
+              handleChange
+            }
+          />
+        </div>
+
+        <div className="faculty-form-group">
+          <label>
+            Duration
           </label>
 
           <input
             type="text"
-            name="department"
-            value={form.department}
-            onChange={handleChange}
-            placeholder="Department"
-            required
+            name="duration"
+            value={
+              form.duration
+            }
+            onChange={
+              handleChange
+            }
+            placeholder="Example: 2 hours"
           />
         </div>
       </div>
-    </>
-  );
+    );
 
   /* =====================================================
      LIBRARY FORM
   ===================================================== */
 
-  const renderLibraryForm = () => (
-    <>
-      {renderPersonalInformation()}
+  const renderLibraryForm =
+    () => (
+      <>
+        {renderPersonalInformation()}
 
-      <div className="faculty-simple-divider" />
+        <div className="faculty-form-divider" />
 
-      <div className="faculty-simple-section">
-        <div className="faculty-simple-title">
-          <span>2</span>
+        <div className="faculty-form-section">
+          <div className="faculty-section-number">
+            2
+          </div>
 
-          <div>
-            <h3>What do you need?</h3>
-            <p>
-              Select the library service you need.
-            </p>
+          <div className="faculty-form-section-content">
+            <div className="faculty-form-section-title">
+              <h3>
+                What do you need?
+              </h3>
+
+              <p>
+                Select the library
+                service you need.
+              </p>
+            </div>
+
+            <div className="faculty-check-grid">
+              {[
+                "Bulk Books",
+                "Faculty Spaces",
+                "Reserved Internet and Research Section",
+                "Library Space",
+                "Other",
+              ].map((item) => (
+                <label
+                  className={`faculty-check-item ${
+                    form.requestItems.includes(
+                      item
+                    )
+                      ? "checked"
+                      : ""
+                  }`}
+                  key={item}
+                >
+                  <input
+                    type="checkbox"
+                    checked={form.requestItems.includes(
+                      item
+                    )}
+                    onChange={() =>
+                      handleLibraryCheckbox(
+                        item
+                      )
+                    }
+                  />
+
+                  <span>
+                    {item}
+                  </span>
+                </label>
+              ))}
+            </div>
+
+            {form.requestItems.includes(
+              "Other"
+            ) && (
+              <div className="faculty-form-group">
+                <label>
+                  Other Request
+                </label>
+
+                <input
+                  type="text"
+                  name="otherRequest"
+                  value={
+                    form.otherRequest
+                  }
+                  onChange={
+                    handleChange
+                  }
+                  placeholder="Please specify"
+                />
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="faculty-check-grid">
-          {[
-            "Bulk Books",
-            "Faculty Spaces",
-            "Reserved Internet and Research Section",
-            "Library Space",
-            "Other",
-          ].map((item) => (
-            <label
-              className={`faculty-check-item ${
-                form.requestItems.includes(item)
-                  ? "checked"
-                  : ""
-              }`}
-              key={item}
-            >
-              <input
-                type="checkbox"
-                checked={form.requestItems.includes(
-                  item
-                )}
-                onChange={() =>
-                  handleLibraryCheckbox(item)
+        <div className="faculty-form-divider" />
+
+        <div className="faculty-form-section">
+          <div className="faculty-section-number">
+            3
+          </div>
+
+          <div className="faculty-form-section-content">
+            <div className="faculty-form-section-title">
+              <h3>
+                When do you need it?
+              </h3>
+
+              <p>
+                Provide the date,
+                time, and details.
+              </p>
+            </div>
+
+            {renderScheduleFields()}
+
+            <div className="faculty-form-group">
+              <label>
+                Details{" "}
+                <span>*</span>
+              </label>
+
+              <textarea
+                name="details"
+                value={
+                  form.details
                 }
+                onChange={
+                  handleChange
+                }
+                placeholder="Briefly describe what you need."
+                rows={6}
               />
-
-              <span>{item}</span>
-            </label>
-          ))}
-        </div>
-
-        {form.requestItems.includes("Other") && (
-          <div className="faculty-form-group">
-            <label>
-              Other Request
-            </label>
-
-            <input
-              type="text"
-              name="otherRequest"
-              value={form.otherRequest}
-              onChange={handleChange}
-              placeholder="Please specify"
-            />
-          </div>
-        )}
-      </div>
-
-      <div className="faculty-simple-divider" />
-
-      <div className="faculty-simple-section">
-        <div className="faculty-simple-title">
-          <span>3</span>
-
-          <div>
-            <h3>When do you need it?</h3>
-            <p>
-              Provide the date and time.
-            </p>
+            </div>
           </div>
         </div>
-
-        {renderScheduleFields()}
-
-        <div className="faculty-form-group">
-          <label>
-            Details <span>*</span>
-          </label>
-
-          <textarea
-            name="details"
-            value={form.details}
-            onChange={handleChange}
-            placeholder="Briefly describe what you need."
-            rows={5}
-            required
-          />
-        </div>
-      </div>
-    </>
-  );
+      </>
+    );
 
   /* =====================================================
      AVR FORM
@@ -1170,158 +1513,198 @@ ${form.details.trim()}`;
     <>
       {renderPersonalInformation()}
 
-      <div className="faculty-simple-divider" />
+      <div className="faculty-form-divider" />
 
-      <div className="faculty-simple-section">
-        <div className="faculty-simple-title">
-          <span>2</span>
-
-          <div>
-            <h3>What do you need?</h3>
-            <p>
-              Select the equipment you need. This is optional.
-            </p>
-          </div>
+      <div className="faculty-form-section">
+        <div className="faculty-section-number">
+          2
         </div>
 
-        <div className="faculty-check-grid">
-          {[
-            "Microphone",
-            "Speaker",
-            "Extension Cord",
-            "Battery",
-            "Laptop",
-            "Projector",
-            "Other",
-          ].map((item) => (
-            <label
-              className={`faculty-check-item ${
-                form.avrEquipment.includes(item)
-                  ? "checked"
-                  : ""
-              }`}
-              key={item}
-            >
-              <input
-                type="checkbox"
-                checked={form.avrEquipment.includes(
-                  item
-                )}
-                onChange={() =>
-                  handleAVREquipmentCheckbox(item)
-                }
-              />
+        <div className="faculty-form-section-content">
+          <div className="faculty-form-section-title">
+            <h3>
+              Equipment Needed
+            </h3>
 
-              <span>{item}</span>
-            </label>
-          ))}
+            <p>
+              Select the equipment
+              you need.
+            </p>
+          </div>
+
+          <div className="faculty-check-grid">
+            {[
+              "Microphone",
+              "Speaker",
+              "Extension Cord",
+              "Battery",
+              "Laptop",
+              "Projector",
+              "Other",
+            ].map((item) => (
+              <label
+                className={`faculty-check-item ${
+                  form.avrEquipment.includes(
+                    item
+                  )
+                    ? "checked"
+                    : ""
+                }`}
+                key={item}
+              >
+                <input
+                  type="checkbox"
+                  checked={form.avrEquipment.includes(
+                    item
+                  )}
+                  onChange={() =>
+                    handleAVREquipmentCheckbox(
+                      item
+                    )
+                  }
+                />
+
+                <span>
+                  {item}
+                </span>
+              </label>
+            ))}
+          </div>
         </div>
       </div>
 
-      <div className="faculty-simple-divider" />
+      <div className="faculty-form-divider" />
 
-      <div className="faculty-simple-section">
-        <div className="faculty-simple-title">
-          <span>3</span>
+      <div className="faculty-form-section">
+        <div className="faculty-section-number">
+          3
+        </div>
 
-          <div>
-            <h3>Service / Venue</h3>
+        <div className="faculty-form-section-content">
+          <div className="faculty-form-section-title">
+            <h3>
+              Service / Venue
+            </h3>
+
             <p>
-              Choose what applies to your request.
+              Choose what applies
+              to your request.
             </p>
           </div>
-        </div>
 
-        <div className="faculty-choice-grid">
-          {[
-            "Technical Assistance",
-            "SJ Conference Room",
-            "AV Room",
-            "Other",
-          ].map((item) => (
-            <label
-              className={`faculty-choice-item ${
-                form.avrService === item
-                  ? "selected"
-                  : ""
-              }`}
-              key={item}
-            >
+          <div className="faculty-choice-grid">
+            {[
+              "Technical Assistance",
+              "SJ Conference Room",
+              "AV Room",
+              "Other",
+            ].map((item) => (
+              <label
+                className={`faculty-choice-item ${
+                  form.avrService ===
+                  item
+                    ? "selected"
+                    : ""
+                }`}
+                key={item}
+              >
+                <input
+                  type="radio"
+                  name="avrService"
+                  value={item}
+                  checked={
+                    form.avrService ===
+                    item
+                  }
+                  onChange={
+                    handleChange
+                  }
+                />
+
+                <span>
+                  {item}
+                </span>
+              </label>
+            ))}
+          </div>
+
+          {form.avrService ===
+            "Other" && (
+            <div className="faculty-form-group">
+              <label>
+                Other Service /
+                Venue
+              </label>
+
               <input
-                type="radio"
-                name="avrService"
-                value={item}
-                checked={
-                  form.avrService === item
+                type="text"
+                name="otherAVRService"
+                value={
+                  form.otherAVRService
                 }
-                onChange={handleChange}
+                onChange={
+                  handleChange
+                }
+                placeholder="Please specify"
               />
+            </div>
+          )}
 
-              <span>{item}</span>
-            </label>
-          ))}
-        </div>
-
-        {form.avrService === "Other" && (
           <div className="faculty-form-group">
             <label>
-              Other Service / Venue
+              Location / Venue
             </label>
 
             <input
               type="text"
-              name="otherAVRService"
-              value={form.otherAVRService}
-              onChange={handleChange}
-              placeholder="Please specify"
+              name="venue"
+              value={form.venue}
+              onChange={
+                handleChange
+              }
+              placeholder="Example: Auditorium"
             />
           </div>
-        )}
-
-        <div className="faculty-form-group">
-          <label>
-            Location / Venue Needed
-          </label>
-
-          <input
-            type="text"
-            name="venue"
-            value={form.venue}
-            onChange={handleChange}
-            placeholder="Example: Grade 10 Classroom, Library, Auditorium"
-          />
         </div>
       </div>
 
-      <div className="faculty-simple-divider" />
+      <div className="faculty-form-divider" />
 
-      <div className="faculty-simple-section">
-        <div className="faculty-simple-title">
-          <span>4</span>
-
-          <div>
-            <h3>Schedule & Details</h3>
-            <p>
-              Tell us when and why you need the service.
-            </p>
-          </div>
+      <div className="faculty-form-section">
+        <div className="faculty-section-number">
+          4
         </div>
 
-        {renderScheduleFields()}
+        <div className="faculty-form-section-content">
+          <div className="faculty-form-section-title">
+            <h3>
+              Schedule & Details
+            </h3>
 
-        <div className="faculty-form-group">
-          <label>
-            Details <span>*</span>
-          </label>
+            <p>
+              Tell us when and why
+              you need the service.
+            </p>
+          </div>
 
-          <textarea
-            name="details"
-            value={form.details}
-            onChange={handleChange}
-            placeholder="Briefly describe your event or activity."
-            rows={5}
-            required
-          />
+          {renderScheduleFields()}
+
+          <div className="faculty-form-group">
+            <label>
+              Details{" "}
+              <span>*</span>
+            </label>
+
+            <textarea
+              name="details"
+              value={form.details}
+              onChange={
+                handleChange
+              }
+              placeholder="Briefly describe your event or activity."
+              rows={6}
+            />
+          </div>
         </div>
       </div>
     </>
@@ -1331,365 +1714,516 @@ ${form.details.trim()}`;
      TECHNICAL FORM
   ===================================================== */
 
-  const renderTechnicalForm = () => (
-    <>
-      {renderPersonalInformation()}
+  const renderTechnicalForm =
+    () => (
+      <>
+        {renderPersonalInformation()}
 
-      <div className="faculty-simple-divider" />
+        <div className="faculty-form-divider" />
 
-      <div className="faculty-simple-section">
-        <div className="faculty-simple-title">
-          <span>2</span>
+        <div className="faculty-form-section">
+          <div className="faculty-section-number">
+            2
+          </div>
 
-          <div>
-            <h3>How urgent is the problem?</h3>
-            <p>
-              Select the appropriate priority.
-            </p>
+          <div className="faculty-form-section-content">
+            <div className="faculty-form-section-title">
+              <h3>
+                Priority
+              </h3>
+
+              <p>
+                Select the urgency
+                of the problem.
+              </p>
+            </div>
+
+            <div className="faculty-priority-grid">
+              {[
+                {
+                  value: "Low",
+                  description:
+                    "General issue.",
+                },
+                {
+                  value: "Medium",
+                  description:
+                    "Needs attention soon.",
+                },
+                {
+                  value: "High",
+                  description:
+                    "Urgent issue affecting work.",
+                },
+              ].map((item) => (
+                <label
+                  key={item.value}
+                  className={`faculty-priority-option ${
+                    form.priority ===
+                    item.value
+                      ? "selected"
+                      : ""
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="priority"
+                    value={
+                      item.value
+                    }
+                    checked={
+                      form.priority ===
+                      item.value
+                    }
+                    onChange={
+                      handleChange
+                    }
+                  />
+
+                  <div>
+                    <strong>
+                      {item.value}
+                    </strong>
+
+                    <span>
+                      {
+                        item.description
+                      }
+                    </span>
+                  </div>
+                </label>
+              ))}
+            </div>
           </div>
         </div>
 
-        <div className="faculty-priority-grid">
-          {[
-            {
-              value: "Low",
-              description:
-                "General issue.",
-            },
-            {
-              value: "Medium",
-              description:
-                "Needs attention soon.",
-            },
-            {
-              value: "High",
-              description:
-                "Urgent issue affecting work.",
-            },
-          ].map((item) => (
-            <label
-              key={item.value}
-              className={`faculty-priority-option ${
-                form.priority === item.value
-                  ? "selected"
-                  : ""
-              }`}
-            >
-              <input
-                type="radio"
-                name="priority"
-                value={item.value}
-                checked={
-                  form.priority === item.value
+        <div className="faculty-form-divider" />
+
+        <div className="faculty-form-section">
+          <div className="faculty-section-number">
+            3
+          </div>
+
+          <div className="faculty-form-section-content">
+            <div className="faculty-form-section-title">
+              <h3>
+                Problem Details
+              </h3>
+
+              <p>
+                Give us enough
+                information to
+                assist you.
+              </p>
+            </div>
+
+            <div className="faculty-form-group">
+              <label>
+                Problem /
+                Description{" "}
+                <span>*</span>
+              </label>
+
+              <textarea
+                name="details"
+                value={form.details}
+                onChange={
+                  handleChange
                 }
-                onChange={handleChange}
+                placeholder="Example: Projector is not displaying the laptop screen."
+                rows={8}
               />
-
-              <div>
-                <strong>{item.value}</strong>
-
-                <span>
-                  {item.description}
-                </span>
-              </div>
-            </label>
-          ))}
-        </div>
-      </div>
-
-      <div className="faculty-simple-divider" />
-
-      <div className="faculty-simple-section">
-        <div className="faculty-simple-title">
-          <span>3</span>
-
-          <div>
-            <h3>What is the problem?</h3>
-            <p>
-              Give us enough information to assist you.
-            </p>
+            </div>
           </div>
         </div>
+      </>
+    );
 
-        <div className="faculty-form-group">
-          <label>
-            Problem / Description <span>*</span>
-          </label>
+  /* =====================================================
+     FORM CONTENT
+  ===================================================== */
 
-          <textarea
-            name="details"
-            value={form.details}
-            onChange={handleChange}
-            placeholder="Example: Projector is not displaying the laptop screen."
-            rows={7}
-            required
-          />
+  const renderFormContent =
+    () => {
+      if (
+        activeRequestType ===
+        "library"
+      ) {
+        return renderLibraryForm();
+      }
+
+      if (
+        activeRequestType ===
+        "avr"
+      ) {
+        return renderAVRForm();
+      }
+
+      return renderTechnicalForm();
+    };
+
+  /* =====================================================
+     REQUEST DETAILS MODAL
+  ===================================================== */
+
+  const renderRequestDetails =
+    () => {
+      if (!selectedRequest) {
+        return null;
+      }
+
+      const request =
+        selectedRequest;
+
+      const status =
+        request.status ||
+        "Pending";
+
+      return (
+        <div
+          className="faculty-details-overlay"
+          onClick={() =>
+            setSelectedRequest(
+              null
+            )
+          }
+        >
+          <div
+            className="faculty-details-modal"
+            onClick={(e) =>
+              e.stopPropagation()
+            }
+          >
+            <div className="faculty-details-header">
+              <div className="faculty-details-title">
+                <div className="faculty-details-icon">
+                  {getRequestIcon(
+                    request.request_type
+                  )}
+                </div>
+
+                <div>
+                  <span>
+                    REQUEST DETAILS
+                  </span>
+
+                  <h2>
+                    {getRequestTitle(
+                      request
+                    )}
+                  </h2>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setSelectedRequest(
+                    null
+                  )
+                }
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="faculty-details-body">
+              <div className="faculty-details-status-row">
+                <span>
+                  Status
+                </span>
+
+                <div
+                  className={`faculty-status ${getStatusClass(
+                    status
+                  )}`}
+                >
+                  {getStatusIcon(
+                    status
+                  )}
+
+                  {status}
+                </div>
+              </div>
+
+              <div className="faculty-details-grid">
+                <div>
+                  <span>
+                    Submitted
+                  </span>
+
+                  <strong>
+                    {formatDateTime(
+                      request.created_at
+                    )}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>
+                    Date Needed
+                  </span>
+
+                  <strong>
+                    {formatDate(
+                      request.request_date
+                    )}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>
+                    Requester
+                  </span>
+
+                  <strong>
+                    {
+                      request.requester_name
+                    }
+                  </strong>
+                </div>
+
+                <div>
+                  <span>
+                    Department
+                  </span>
+
+                  <strong>
+                    {extractDepartment(
+                      request.details
+                    )}
+                  </strong>
+                </div>
+              </div>
+
+              <div className="faculty-details-content">
+                <span>
+                  Complete Request
+                </span>
+
+                <pre>
+                  {request.details ||
+                    "No additional details provided."}
+                </pre>
+              </div>
+            </div>
+
+            <div className="faculty-details-footer">
+              {status ===
+                "Pending" && (
+                <button
+                  type="button"
+                  className="faculty-cancel-button"
+                  onClick={() =>
+                    handleCancelRequest(
+                      request
+                    )
+                  }
+                  disabled={
+                    cancellingId ===
+                    request.id
+                  }
+                >
+                  <Trash2 size={16} />
+
+                  {cancellingId ===
+                  request.id
+                    ? "Cancelling..."
+                    : "Cancel Request"}
+                </button>
+              )}
+
+              <button
+                type="button"
+                className="faculty-close-button"
+                onClick={() =>
+                  setSelectedRequest(
+                    null
+                  )
+                }
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
-    </>
-  );
+      );
+    };
 
-  const renderFormContent = () => {
-    if (activeTab === "library") {
-      return renderLibraryForm();
+  /* =====================================================
+     EXTRACT DEPARTMENT
+  ===================================================== */
+
+  const extractDepartment = (
+    details
+  ) => {
+    if (!details) {
+      return "-";
     }
 
-    if (activeTab === "avr") {
-      return renderAVRForm();
+    const match =
+      details.match(
+        /Department:\s*(.+)/
+      );
+
+    if (!match) {
+      return "-";
     }
 
-    return renderTechnicalForm();
+    return match[1]
+      .split("\n")[0]
+      .trim();
   };
 
   /* =====================================================
-     REQUEST CARD
+     COMPACT REQUEST ROW
   ===================================================== */
 
-  const renderRequestCard = (
+  const renderRequestRow = (
     request,
-    showCancel = false
-  ) => (
-    <article
-      className="faculty-request-card"
-      key={request.id}
-    >
-      <div className="faculty-request-top">
-        <div className="faculty-request-title-area">
-          <div className="faculty-request-icon">
+    allowCancel = false
+  ) => {
+    const status =
+      request.status ||
+      "Pending";
+
+    return (
+      <div
+        className="faculty-request-row"
+        key={request.id}
+      >
+        <div className="faculty-request-date">
+          <CalendarDays size={17} />
+
+          <div>
+            <span>
+              Date
+            </span>
+
+            <strong>
+              {formatDate(
+                request.created_at
+                  ?.split("T")[0]
+              )}
+            </strong>
+          </div>
+        </div>
+
+        <div className="faculty-request-type">
+          <div className="faculty-row-icon">
             {getRequestIcon(
               request.request_type
             )}
           </div>
 
           <div>
-            <h3>
-              {getRequestTitle(request)}
-            </h3>
-
             <span>
-              Submitted{" "}
-              {request.created_at
-                ? new Date(
-                    request.created_at
-                  ).toLocaleDateString(
-                    "en-US",
-                    {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    }
-                  )
-                : "-"}
+              Request Type
             </span>
+
+            <strong>
+              {getRequestTitle(
+                request
+              )}
+            </strong>
           </div>
         </div>
 
-        <div
-          className={`faculty-status ${getStatusClass(
-            request.status
-          )}`}
-        >
-          {getStatusIcon(
-            request.status
-          )}
-
+        <div className="faculty-request-row-status">
           <span>
-            {request.status ||
-              "Pending"}
-          </span>
-        </div>
-      </div>
-
-      <div className="faculty-request-details">
-        {request.request_date && (
-          <div className="faculty-request-info">
-            <CalendarDays size={17} />
-
-            <div>
-              <span>Date Needed</span>
-
-              <strong>
-                {formatDate(
-                  request.request_date
-                )}
-              </strong>
-            </div>
-          </div>
-        )}
-
-        {request.request_type ===
-          "Technical Assistance" && (
-          <div className="faculty-request-info">
-            <Flag size={17} />
-
-            <div>
-              <span>Type</span>
-
-              <strong>
-                Technical Support
-              </strong>
-            </div>
-          </div>
-        )}
-
-        {request.request_type ===
-          "AVR Request" && (
-          <div className="faculty-request-info">
-            <MapPin size={17} />
-
-            <div>
-              <span>Request</span>
-
-              <strong>
-                AVR / Equipment
-              </strong>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="faculty-request-description">
-        <span>Request Details</span>
-
-        <div>
-          {request.details}
-        </div>
-      </div>
-
-      {showCancel &&
-        request.status === "Pending" && (
-          <div className="faculty-request-actions">
-            <button
-              type="button"
-              className="faculty-cancel-request"
-              onClick={() =>
-                handleCancelRequest(
-                  request
-                )
-              }
-              disabled={
-                cancellingId === request.id
-              }
-            >
-              <Trash2 size={15} />
-
-              {cancellingId === request.id
-                ? "Cancelling..."
-                : "Cancel Request"}
-            </button>
-          </div>
-        )}
-    </article>
-  );
-
-  /* =====================================================
-     ACTIVE REQUESTS
-  ===================================================== */
-
-  const renderTrackRequests = () => {
-    if (loadingRequests) {
-      return (
-        <div className="faculty-empty">
-          <Clock3 size={28} />
-
-          <strong>
-            Loading requests...
-          </strong>
-
-          <span>
-            Please wait.
-          </span>
-        </div>
-      );
-    }
-
-    if (activeRequests.length === 0) {
-      return (
-        <div className="faculty-empty">
-          <Clock3 size={28} />
-
-          <strong>
-            No active requests
-          </strong>
-
-          <span>
-            Your pending or accepted requests will appear here.
+            Status
           </span>
 
+          <div
+            className={`faculty-status ${getStatusClass(
+              status
+            )}`}
+          >
+            {getStatusIcon(
+              status
+            )}
+
+            {status}
+          </div>
+        </div>
+
+        <div className="faculty-request-row-action">
           <button
             type="button"
-            className="faculty-empty-action"
             onClick={() =>
-              changeSection("request")
+              setSelectedRequest(
+                request
+              )
             }
           >
-            <Send size={16} />
-            Make a Request
-          </button>
-        </div>
-      );
-    }
+            <Eye size={16} />
 
-    return (
-      <div className="faculty-request-list">
-        {activeRequests.map((request) =>
-          renderRequestCard(
-            request,
-            true
-          )
-        )}
+            View Details
+          </button>
+
+          {allowCancel &&
+            status ===
+              "Pending" && (
+              <button
+                type="button"
+                className="faculty-row-cancel"
+                onClick={() =>
+                  handleCancelRequest(
+                    request
+                  )
+                }
+              >
+                <Trash2
+                  size={15}
+                />
+              </button>
+            )}
+        </div>
       </div>
     );
   };
 
   /* =====================================================
-     HISTORY
+     EMPTY STATE
   ===================================================== */
 
-  const renderHistory = () => {
-    if (loadingRequests) {
-      return (
-        <div className="faculty-empty">
-          <Clock3 size={28} />
+  const renderEmptyState = (
+    type
+  ) => (
+    <div className="faculty-empty">
+      {type === "history" ? (
+        <History size={34} />
+      ) : (
+        <Clock3 size={34} />
+      )}
 
-          <strong>
-            Loading history...
-          </strong>
+      <strong>
+        {type === "history"
+          ? "No request history"
+          : "No active requests"}
+      </strong>
 
-          <span>
-            Please wait.
-          </span>
-        </div>
-      );
-    }
+      <span>
+        {type === "history"
+          ? "Completed and cancelled requests will appear here."
+          : "Your pending, accepted, or in-progress requests will appear here."}
+      </span>
 
-    if (historyRequests.length === 0) {
-      return (
-        <div className="faculty-empty">
-          <History size={28} />
-
-          <strong>
-            No request history
-          </strong>
-
-          <span>
-            Completed and cancelled requests will appear here.
-          </span>
-        </div>
-      );
-    }
-
-    return (
-      <div className="faculty-request-list">
-        {historyRequests.map((request) =>
-          renderRequestCard(
-            request,
-            false
-          )
-        )}
-      </div>
-    );
-  };
+      {type === "track" && (
+        <button
+          type="button"
+          onClick={() =>
+            openRequest(
+              "library"
+            )
+          }
+        >
+          <Send size={16} />
+          Make a Request
+        </button>
+      )}
+    </div>
+  );
 
   /* =====================================================
      LOADING
@@ -1718,9 +2252,7 @@ ${form.details.trim()}`;
   return (
     <div className="faculty-dashboard">
 
-      {/* =================================================
-          NOTIFICATION
-      ================================================= */}
+      {/* NOTIFICATION */}
 
       {notification.show && (
         <div
@@ -1747,23 +2279,23 @@ ${form.details.trim()}`;
 
           <button
             type="button"
-            onClick={closeNotification}
+            onClick={
+              closeNotification
+            }
           >
             <X size={18} />
           </button>
         </div>
       )}
 
-      {/* =================================================
-          LOGOUT MODAL
-      ================================================= */}
+      {/* LOGOUT MODAL */}
 
       {showLogoutModal && (
         <div
           className="faculty-modal-overlay"
-          role="dialog"
-          aria-modal="true"
-          onClick={closeLogoutModal}
+          onClick={
+            closeLogoutModal
+          }
         >
           <div
             className="faculty-logout-modal"
@@ -1790,8 +2322,12 @@ ${form.details.trim()}`;
 
               <button
                 type="button"
-                onClick={closeLogoutModal}
-                disabled={loggingOut}
+                onClick={
+                  closeLogoutModal
+                }
+                disabled={
+                  loggingOut
+                }
               >
                 <X size={18} />
               </button>
@@ -1799,17 +2335,19 @@ ${form.details.trim()}`;
 
             <div className="faculty-modal-body">
               <div className="faculty-modal-alert">
-                <AlertCircle size={27} />
+                <AlertCircle
+                  size={27}
+                />
               </div>
 
               <h4>
-                Are you sure you want to logout?
+                Are you sure you want
+                to logout?
               </h4>
 
               <p>
-                You will be signed out of your
-                faculty account and returned
-                to the home page.
+                You will be signed out
+                of your faculty account.
               </p>
 
               <div className="faculty-modal-actions">
@@ -1819,7 +2357,9 @@ ${form.details.trim()}`;
                   onClick={
                     closeLogoutModal
                   }
-                  disabled={loggingOut}
+                  disabled={
+                    loggingOut
+                  }
                 >
                   Stay
                 </button>
@@ -1827,8 +2367,12 @@ ${form.details.trim()}`;
                 <button
                   type="button"
                   className="faculty-modal-logout"
-                  onClick={handleLogout}
-                  disabled={loggingOut}
+                  onClick={
+                    handleLogout
+                  }
+                  disabled={
+                    loggingOut
+                  }
                 >
                   <LogOut size={16} />
 
@@ -1842,9 +2386,11 @@ ${form.details.trim()}`;
         </div>
       )}
 
-      {/* =================================================
-          HEADER
-      ================================================= */}
+      {/* REQUEST DETAILS */}
+
+      {renderRequestDetails()}
+
+      {/* HEADER */}
 
       <header className="faculty-header">
         <div className="faculty-header-inner">
@@ -1892,11 +2438,12 @@ ${form.details.trim()}`;
 
             <button
               className="faculty-logout"
-              onClick={openLogoutModal}
+              onClick={
+                openLogoutModal
+              }
               type="button"
             >
               <LogOut size={17} />
-
               <span>
                 Logout
               </span>
@@ -1905,26 +2452,23 @@ ${form.details.trim()}`;
         </div>
       </header>
 
-      {/* =================================================
-          NOTICE
-      ================================================= */}
+      {/* NOTICE */}
 
       <div className="faculty-notice">
         <span>
-          Submit your request in advance so the
-          Instructional Media Center can prepare
-          the needed service or equipment.
+          Submit your request in
+          advance so the Instructional
+          Media Center can prepare the
+          needed service or equipment.
         </span>
       </div>
 
-      {/* =================================================
-          MAIN
-      ================================================= */}
+      {/* MAIN */}
 
       <main className="faculty-main">
         <div className="faculty-container">
 
-          {/* PAGE TITLE */}
+          {/* TITLE */}
 
           <section className="faculty-page-heading">
             <div>
@@ -1933,41 +2477,23 @@ ${form.details.trim()}`;
               </span>
 
               <h1>
-                {activeSection ===
-                "request"
-                  ? "Request a Service"
-                  : activeSection ===
-                    "track"
-                  ? "Track My Requests"
-                  : "Request History"}
+                Service Request
               </h1>
 
               <p>
-                {activeSection ===
-                "request"
-                  ? "Choose a service and submit your request."
-                  : activeSection ===
-                    "track"
-                  ? "Check the status of your active requests."
-                  : "View requests that have already been completed or cancelled."}
+                Choose a service, track
+                your requests, or view
+                your request history.
               </p>
             </div>
 
             <div className="faculty-heading-mark">
-              {activeSection ===
-              "request" ? (
-                <Send size={25} />
-              ) : activeSection ===
-                "track" ? (
-                <Clock3 size={25} />
-              ) : (
-                <History size={25} />
-              )}
+              <Send size={26} />
             </div>
           </section>
 
           {/* =================================================
-              MAIN NAVIGATION
+              FIVE MAIN BUTTONS
           ================================================= */}
 
           <div className="faculty-main-tabs">
@@ -1976,20 +2502,70 @@ ${form.details.trim()}`;
               type="button"
               className={
                 activeSection ===
-                "request"
+                  "request" &&
+                activeRequestType ===
+                  "library"
                   ? "active"
                   : ""
               }
               onClick={() =>
-                changeSection(
-                  "request"
+                openRequest(
+                  "library"
                 )
               }
             >
-              <Send size={18} />
+              <BookOpen size={21} />
 
               <span>
-                Request Service
+                Library Request
+              </span>
+            </button>
+
+            <button
+              type="button"
+              className={
+                activeSection ===
+                  "request" &&
+                activeRequestType ===
+                  "avr"
+                  ? "active"
+                  : ""
+              }
+              onClick={() =>
+                openRequest(
+                  "avr"
+                )
+              }
+            >
+              <MonitorPlay
+                size={21}
+              />
+
+              <span>
+                AVR Request
+              </span>
+            </button>
+
+            <button
+              type="button"
+              className={
+                activeSection ===
+                  "request" &&
+                activeRequestType ===
+                  "technical"
+                  ? "active"
+                  : ""
+              }
+              onClick={() =>
+                openRequest(
+                  "technical"
+                )
+              }
+            >
+              <Wrench size={21} />
+
+              <span>
+                Technical Request
               </span>
             </button>
 
@@ -2001,22 +2577,22 @@ ${form.details.trim()}`;
                   ? "active"
                   : ""
               }
-              onClick={() =>
-                changeSection(
-                  "track"
-                )
+              onClick={
+                openTrack
               }
             >
-              <Clock3 size={18} />
+              <Clock3 size={21} />
 
               <span>
-                Track Requests
+                Track Request
               </span>
 
               {activeRequests.length >
                 0 && (
                 <b className="faculty-tab-count">
-                  {activeRequests.length}
+                  {
+                    activeRequests.length
+                  }
                 </b>
               )}
             </button>
@@ -2029,13 +2605,11 @@ ${form.details.trim()}`;
                   ? "active"
                   : ""
               }
-              onClick={() =>
-                changeSection(
-                  "history"
-                )
+              onClick={
+                openHistory
               }
             >
-              <History size={18} />
+              <History size={21} />
 
               <span>
                 History
@@ -2044,7 +2618,9 @@ ${form.details.trim()}`;
               {historyRequests.length >
                 0 && (
                 <b className="faculty-tab-count">
-                  {historyRequests.length}
+                  {
+                    historyRequests.length
+                  }
                 </b>
               )}
             </button>
@@ -2052,211 +2628,107 @@ ${form.details.trim()}`;
           </div>
 
           {/* =================================================
-              REQUEST SERVICE
+              REQUEST FORM
           ================================================= */}
 
           {activeSection ===
             "request" && (
-            <>
+            <section className="faculty-card">
 
-              {/* SERVICE TABS */}
+              <div className="faculty-card-header">
+                <div>
+                  <span className="faculty-label">
+                    NEW REQUEST
+                  </span>
 
-              <div className="faculty-service-tabs">
+                  <h2>
+                    {activeRequestType ===
+                      "library" &&
+                      "Library Request"}
 
-                <button
-                  type="button"
-                  className={
-                    activeTab ===
-                    "library"
-                      ? "active"
-                      : ""
-                  }
-                  onClick={() =>
-                    changeTab(
-                      "library"
-                    )
-                  }
-                >
-                  <BookOpen size={20} />
+                    {activeRequestType ===
+                      "avr" &&
+                      "AVR Request"}
 
-                  <div>
-                    <strong>
-                      Library
-                    </strong>
+                    {activeRequestType ===
+                      "technical" &&
+                      "Technical Request"}
+                  </h2>
 
-                    <span>
-                      Library services
-                    </span>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  className={
-                    activeTab === "avr"
-                      ? "active"
-                      : ""
-                  }
-                  onClick={() =>
-                    changeTab("avr")
-                  }
-                >
-                  <MonitorPlay
-                    size={20}
-                  />
-
-                  <div>
-                    <strong>
-                      AVR
-                    </strong>
-
-                    <span>
-                      Equipment & venue
-                    </span>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  className={
-                    activeTab ===
-                    "technical"
-                      ? "active"
-                      : ""
-                  }
-                  onClick={() =>
-                    changeTab(
-                      "technical"
-                    )
-                  }
-                >
-                  <Wrench size={20} />
-
-                  <div>
-                    <strong>
-                      Technical
-                    </strong>
-
-                    <span>
-                      Technical support
-                    </span>
-                  </div>
-                </button>
-
-              </div>
-
-              {/* FORM */}
-
-              <section className="faculty-card">
-
-                <div className="faculty-card-header">
-
-                  <div>
-                    <span className="faculty-label">
-                      NEW REQUEST
-                    </span>
-
-                    <h2>
-                      {activeTab ===
-                        "library" &&
-                        "Library Service"}
-
-                      {activeTab ===
-                        "avr" &&
-                        "AVR Service"}
-
-                      {activeTab ===
-                        "technical" &&
-                        "Technical Assistance"}
-                    </h2>
-
-                    <p>
-                      {activeTab ===
-                        "library" &&
-                        "Request library services and spaces."}
-
-                      {activeTab ===
-                        "avr" &&
-                        "Request equipment, technical assistance, or a venue."}
-
-                      {activeTab ===
-                        "technical" &&
-                        "Report a technical problem to the support team."}
-                    </p>
-                  </div>
-
-                  <div className="faculty-card-icon">
-                    {activeTab ===
-                      "library" && (
-                      <BookOpen
-                        size={22}
-                      />
-                    )}
-
-                    {activeTab ===
-                      "avr" && (
-                      <MonitorPlay
-                        size={22}
-                      />
-                    )}
-
-                    {activeTab ===
-                      "technical" && (
-                      <Wrench
-                        size={22}
-                      />
-                    )}
-                  </div>
-
+                  <p>
+                    Complete the form
+                    below to submit your
+                    request.
+                  </p>
                 </div>
 
-                <form
-                  className="faculty-form"
-                  onSubmit={
-                    handleSubmit
-                  }
-                >
-                  {renderFormContent()}
+                <div className="faculty-card-icon">
+                  {activeRequestType ===
+                    "library" && (
+                    <BookOpen
+                      size={23}
+                    />
+                  )}
 
-                  <div className="faculty-form-footer">
+                  {activeRequestType ===
+                    "avr" && (
+                    <MonitorPlay
+                      size={23}
+                    />
+                  )}
 
-                    <button
-                      type="button"
-                      className="faculty-reset-button"
-                      onClick={
-                        resetForm
-                      }
-                      disabled={
-                        submitting
-                      }
-                    >
-                      Clear
-                    </button>
+                  {activeRequestType ===
+                    "technical" && (
+                    <Wrench
+                      size={23}
+                    />
+                  )}
+                </div>
+              </div>
 
-                    <button
-                      type="submit"
-                      className="faculty-submit-button"
-                      disabled={
-                        submitting
-                      }
-                    >
-                      {submitting ? (
-                        "Submitting..."
-                      ) : (
-                        <>
-                          <Send
-                            size={17}
-                          />
+              <form
+                className="faculty-form"
+                onSubmit={
+                  handleSubmit
+                }
+              >
+                {renderFormContent()}
 
-                          Submit Request
-                        </>
-                      )}
-                    </button>
+                <div className="faculty-form-footer">
+                  <button
+                    type="button"
+                    className="faculty-reset-button"
+                    onClick={
+                      resetForm
+                    }
+                    disabled={
+                      submitting
+                    }
+                  >
+                    Clear
+                  </button>
 
-                  </div>
-                </form>
-              </section>
-            </>
+                  <button
+                    type="submit"
+                    className="faculty-submit-button"
+                    disabled={
+                      submitting
+                    }
+                  >
+                    {submitting ? (
+                      "Submitting..."
+                    ) : (
+                      <>
+                        <Send
+                          size={17}
+                        />
+                        Submit Request
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </section>
           )}
 
           {/* =================================================
@@ -2268,32 +2740,94 @@ ${form.details.trim()}`;
             <section className="faculty-status-section">
 
               <div className="faculty-section-heading">
-
                 <div>
                   <span className="faculty-label">
                     ACTIVE REQUESTS
                   </span>
 
                   <h2>
-                    My Requests
+                    Track My Requests
                   </h2>
 
                   <p>
-                    These are requests that are
-                    still being processed.
+                    Click View Details
+                    to see the complete
+                    request information.
                   </p>
                 </div>
 
-                <div className="faculty-request-count">
-                  {
-                    activeRequests.length
+                <button
+                  type="button"
+                  className="faculty-refresh-button"
+                  onClick={() =>
+                    loadRequests(
+                      user?.email,
+                      true
+                    )
                   }
-                </div>
+                  disabled={
+                    refreshing
+                  }
+                >
+                  <RefreshCw
+                    size={16}
+                    className={
+                      refreshing
+                        ? "faculty-spin"
+                        : ""
+                    }
+                  />
 
+                  {refreshing
+                    ? "Refreshing..."
+                    : "Refresh"}
+                </button>
               </div>
 
-              {renderTrackRequests()}
+              {loadingRequests ? (
+                <div className="faculty-empty">
+                  <Clock3
+                    size={34}
+                  />
 
+                  <strong>
+                    Loading requests...
+                  </strong>
+
+                  <span>
+                    Please wait.
+                  </span>
+                </div>
+              ) : activeRequests.length ===
+                0 ? (
+                renderEmptyState(
+                  "track"
+                )
+              ) : (
+                <div className="faculty-request-list">
+                  <div className="faculty-list-header">
+                    <span>
+                      Request
+                    </span>
+
+                    <span>
+                      Status
+                    </span>
+
+                    <span>
+                      Action
+                    </span>
+                  </div>
+
+                  {activeRequests.map(
+                    (request) =>
+                      renderRequestRow(
+                        request,
+                        true
+                      )
+                  )}
+                </div>
+              )}
             </section>
           )}
 
@@ -2306,41 +2840,103 @@ ${form.details.trim()}`;
             <section className="faculty-status-section">
 
               <div className="faculty-section-heading">
-
                 <div>
                   <span className="faculty-label">
                     REQUEST HISTORY
                   </span>
 
                   <h2>
-                    Completed & Cancelled
+                    Request History
                   </h2>
 
                   <p>
-                    Previous requests are stored
-                    here for your reference.
+                    Completed and cancelled
+                    requests are stored
+                    here.
                   </p>
                 </div>
 
-                <div className="faculty-request-count">
+                <div className="faculty-history-count">
                   {
                     historyRequests.length
                   }
                 </div>
-
               </div>
 
-              {renderHistory()}
+              {loadingRequests ? (
+                <div className="faculty-empty">
+                  <Clock3
+                    size={34}
+                  />
 
+                  <strong>
+                    Loading history...
+                  </strong>
+
+                  <span>
+                    Please wait.
+                  </span>
+                </div>
+              ) : historyRequests.length ===
+                0 ? (
+                renderEmptyState(
+                  "history"
+                )
+              ) : (
+                <div className="faculty-request-list">
+                  <div className="faculty-list-header">
+                    <span>
+                      Request
+                    </span>
+
+                    <span>
+                      Status
+                    </span>
+
+                    <span>
+                      Action
+                    </span>
+                  </div>
+
+                  {historyRequests.map(
+                    (request) =>
+                      renderRequestRow(
+                        request,
+                        false
+                      )
+                  )}
+                </div>
+              )}
             </section>
+          )}
+
+          {/* INITIAL STATE */}
+
+          {activeSection === null && (
+            <div className="faculty-welcome">
+              <div className="faculty-welcome-icon">
+                <Send size={30} />
+              </div>
+
+              <h2>
+                What can we help you
+                with?
+              </h2>
+
+              <p>
+                Select one of the request
+                options above to get
+                started.
+              </p>
+            </div>
           )}
 
         </div>
       </main>
 
       <footer className="faculty-footer">
-        © 2026 Instructional Media Center.
-        All rights reserved.
+        © 2026 Instructional Media
+        Center. All rights reserved.
       </footer>
     </div>
   );
