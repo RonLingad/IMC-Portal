@@ -15,6 +15,7 @@ import {
   MapPin,
   Flag,
   Trash2,
+  History,
 } from "lucide-react";
 
 import { supabase } from "../services/supabase";
@@ -32,10 +33,6 @@ function FacultyDashboard() {
 
   const [submitting, setSubmitting] = useState(false);
   const [cancellingId, setCancellingId] = useState(null);
-
-  /* =====================================================
-     LOGOUT MODAL
-  ===================================================== */
 
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -56,9 +53,9 @@ function FacultyDashboard() {
     otherRequest: "",
 
     avrEquipment: [],
-    avrLocations: [],
-    otherAVREquipment: "",
-    otherAVRLocation: "",
+    avrService: "",
+    otherAVRService: "",
+    venue: "",
 
     dateNeeded: "",
     timeNeeded: "",
@@ -186,7 +183,6 @@ function FacultyDashboard() {
 
         setUser(null);
         setRequests([]);
-
         setLoadingRequests(false);
         setLoadingUser(false);
 
@@ -212,49 +208,47 @@ function FacultyDashboard() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        if (!mounted) return;
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return;
 
-        const currentUser = session?.user || null;
+      const currentUser = session?.user || null;
 
-        if (!currentUser) {
-          setUser(null);
-          setRequests([]);
-
-          setForm((current) => ({
-            ...current,
-            email: "",
-            fullName: "",
-          }));
-
-          setLoadingRequests(false);
-
-          if (window.location.pathname !== "/login") {
-            window.location.href = "/login";
-          }
-
-          return;
-        }
-
-        setUser(currentUser);
+      if (!currentUser) {
+        setUser(null);
+        setRequests([]);
 
         setForm((current) => ({
           ...current,
-          email: currentUser.email || "",
-          fullName:
-            currentUser.user_metadata?.full_name ||
-            currentUser.user_metadata?.name ||
-            current.fullName,
+          email: "",
+          fullName: "",
         }));
 
-        window.setTimeout(() => {
-          if (mounted) {
-            loadRequests(currentUser.email);
-          }
-        }, 0);
+        setLoadingRequests(false);
+
+        if (window.location.pathname !== "/login") {
+          window.location.href = "/login";
+        }
+
+        return;
       }
-    );
+
+      setUser(currentUser);
+
+      setForm((current) => ({
+        ...current,
+        email: currentUser.email || "",
+        fullName:
+          currentUser.user_metadata?.full_name ||
+          currentUser.user_metadata?.name ||
+          current.fullName,
+      }));
+
+      window.setTimeout(() => {
+        if (mounted) {
+          loadRequests(currentUser.email);
+        }
+      }, 0);
+    });
 
     return () => {
       mounted = false;
@@ -305,21 +299,6 @@ function FacultyDashboard() {
     });
   };
 
-  const handleAVRLocationCheckbox = (value) => {
-    setForm((current) => {
-      const exists = current.avrLocations.includes(value);
-
-      return {
-        ...current,
-        avrLocations: exists
-          ? current.avrLocations.filter(
-              (item) => item !== value
-            )
-          : [...current.avrLocations, value],
-      };
-    });
-  };
-
   /* =====================================================
      VALIDATION
   ===================================================== */
@@ -328,7 +307,7 @@ function FacultyDashboard() {
     if (!form.fullName.trim()) {
       showNotification(
         "error",
-        "Full name required",
+        "Name required",
         "Please enter your full name."
       );
       return false;
@@ -368,8 +347,8 @@ function FacultyDashboard() {
       ) {
         showNotification(
           "error",
-          "Other request required",
-          "Please specify your other library request."
+          "Please specify your request",
+          "Please describe your other library request."
         );
         return false;
       }
@@ -392,68 +371,17 @@ function FacultyDashboard() {
         return false;
       }
 
-      if (!form.duration.trim()) {
-        showNotification(
-          "error",
-          "Duration required",
-          "Please indicate how long you will need the service."
-        );
-        return false;
-      }
-
       if (!form.details.trim()) {
         showNotification(
           "error",
           "Details required",
-          "Please provide details about your request."
+          "Please provide a short description of your request."
         );
         return false;
       }
     }
 
     if (activeTab === "avr") {
-      if (form.avrEquipment.length === 0) {
-        showNotification(
-          "error",
-          "Equipment required",
-          "Please select at least one equipment item."
-        );
-        return false;
-      }
-
-      if (form.avrLocations.length === 0) {
-        showNotification(
-          "error",
-          "Location required",
-          "Please select where the AVR service is needed."
-        );
-        return false;
-      }
-
-      if (
-        form.avrEquipment.includes("Other") &&
-        !form.otherAVREquipment.trim()
-      ) {
-        showNotification(
-          "error",
-          "Other equipment required",
-          "Please specify the other equipment you need."
-        );
-        return false;
-      }
-
-      if (
-        form.avrLocations.includes("Other") &&
-        !form.otherAVRLocation.trim()
-      ) {
-        showNotification(
-          "error",
-          "Other location required",
-          "Please specify the other location or service."
-        );
-        return false;
-      }
-
       if (!form.dateNeeded) {
         showNotification(
           "error",
@@ -472,20 +400,11 @@ function FacultyDashboard() {
         return false;
       }
 
-      if (!form.duration.trim()) {
-        showNotification(
-          "error",
-          "Duration required",
-          "Please indicate how long the AVR service will be needed."
-        );
-        return false;
-      }
-
       if (!form.details.trim()) {
         showNotification(
           "error",
           "Details required",
-          "Please provide details about your AVR request."
+          "Please provide a short description of your request."
         );
         return false;
       }
@@ -504,7 +423,7 @@ function FacultyDashboard() {
       if (!form.details.trim()) {
         showNotification(
           "error",
-          "Problem description required",
+          "Problem required",
           "Please describe the technical problem."
         );
         return false;
@@ -579,7 +498,7 @@ function FacultyDashboard() {
         showNotification(
           "error",
           "Session expired",
-          "Please login again before submitting a request."
+          "Please login again before submitting."
         );
 
         window.setTimeout(() => {
@@ -594,16 +513,18 @@ function FacultyDashboard() {
 
       if (!requesterEmail) {
         throw new Error(
-          "Your Supabase account does not have an email address."
+          "Your account does not have an email address."
         );
       }
 
       let details = "";
 
+      /* ---------------- LIBRARY ---------------- */
+
       if (activeTab === "library") {
         details = `Department: ${form.department}
 
-Services Needed:
+Services Requested:
 ${form.requestItems
   .map((item) => `• ${item}`)
   .join("\n")}`;
@@ -622,61 +543,73 @@ ${form.otherRequest.trim()}`;
 
 Date Needed: ${formatDate(form.dateNeeded)}
 Time Needed: ${formatTime(form.timeNeeded)}
-Duration: ${form.duration.trim()}
 
 Description:
 ${form.details.trim()}`;
       }
 
+      /* ---------------- AVR ---------------- */
+
       if (activeTab === "avr") {
-        details = `Department: ${form.department}
+        details = `Department: ${form.department}`;
+
+        if (form.avrEquipment.length > 0) {
+          details += `
 
 Equipment Needed:
 ${form.avrEquipment
   .map((item) => `• ${item}`)
   .join("\n")}`;
-
-        if (
-          form.avrEquipment.includes("Other") &&
-          form.otherAVREquipment.trim()
-        ) {
-          details += `
-
-Other Equipment:
-${form.otherAVREquipment.trim()}`;
         }
 
-        details += `
+        if (form.avrService) {
+          details += `
 
-Location / Service:
-${form.avrLocations
-  .map((item) => `• ${item}`)
-  .join("\n")}`;
+Service / Venue:
+${form.avrService}`;
+        }
 
         if (
-          form.avrLocations.includes("Other") &&
-          form.otherAVRLocation.trim()
+          form.avrService === "Other" &&
+          form.otherAVRService.trim()
         ) {
           details += `
 
-Other Location / Service:
-${form.otherAVRLocation.trim()}`;
+Other Service / Venue:
+${form.otherAVRService.trim()}`;
+        }
+
+        if (form.venue.trim()) {
+          details += `
+
+Location / Venue Needed:
+${form.venue.trim()}`;
         }
 
         details += `
 
 Date Needed: ${formatDate(form.dateNeeded)}
-Time Needed: ${formatTime(form.timeNeeded)}
-Duration: ${form.duration.trim()}
+Time Needed: ${formatTime(form.timeNeeded)}`;
+
+        if (form.duration.trim()) {
+          details += `
+
+Duration:
+${form.duration.trim()}`;
+        }
+
+        details += `
 
 Description:
 ${form.details.trim()}`;
       }
 
+      /* ---------------- TECHNICAL ---------------- */
+
       if (activeTab === "technical") {
         details = `Department: ${form.department}
 
-Priority Level:
+Priority:
 ${form.priority}
 
 Problem / Description:
@@ -729,8 +662,13 @@ ${form.details.trim()}`;
       );
 
       resetForm();
+
+      setActiveSection("track");
     } catch (error) {
-      console.error("Request submission error:", error);
+      console.error(
+        "Request submission error:",
+        error
+      );
 
       showNotification(
         "error",
@@ -804,10 +742,13 @@ ${form.details.trim()}`;
       showNotification(
         "success",
         "Request cancelled",
-        "Your request has been cancelled successfully."
+        "Your request has been cancelled."
       );
     } catch (error) {
-      console.error("Cancel request error:", error);
+      console.error(
+        "Cancel request error:",
+        error
+      );
 
       showNotification(
         "error",
@@ -844,9 +785,9 @@ ${form.details.trim()}`;
       otherRequest: "",
 
       avrEquipment: [],
-      avrLocations: [],
-      otherAVREquipment: "",
-      otherAVRLocation: "",
+      avrService: "",
+      otherAVRService: "",
+      venue: "",
 
       dateNeeded: "",
       timeNeeded: "",
@@ -885,18 +826,16 @@ ${form.details.trim()}`;
 
       setUser(null);
       setRequests([]);
-
       setShowLogoutModal(false);
 
-      /*
-       * Logout goes directly to Home.
-       */
       window.location.href = "/";
     } catch (error) {
-      console.error("Logout error:", error);
+      console.error(
+        "Logout error:",
+        error
+      );
 
       setLoggingOut(false);
-
       setShowLogoutModal(false);
 
       showNotification(
@@ -915,7 +854,6 @@ ${form.details.trim()}`;
     setActiveSection(section);
 
     if (section === "request") {
-      setActiveTab("library");
       resetForm();
     }
   };
@@ -969,7 +907,10 @@ ${form.details.trim()}`;
   };
 
   const getRequestTitle = (request) => {
-    if (request.request_type === "AVR Request") {
+    if (
+      request.request_type ===
+      "AVR Request"
+    ) {
       return "AVR Request";
     }
 
@@ -982,6 +923,22 @@ ${form.details.trim()}`;
 
     return "Library Request";
   };
+
+  /* =====================================================
+     REQUEST FILTERS
+  ===================================================== */
+
+  const activeRequests = requests.filter(
+    (request) =>
+      request.status !== "Completed" &&
+      request.status !== "Cancelled"
+  );
+
+  const historyRequests = requests.filter(
+    (request) =>
+      request.status === "Completed" ||
+      request.status === "Cancelled"
+  );
 
   /* =====================================================
      SCHEDULE
@@ -1019,7 +976,7 @@ ${form.details.trim()}`;
 
       <div className="faculty-form-group">
         <label>
-          Duration <span>*</span>
+          Duration
         </label>
 
         <input
@@ -1028,7 +985,6 @@ ${form.details.trim()}`;
           value={form.duration}
           onChange={handleChange}
           placeholder="Example: 2 hours"
-          required
         />
       </div>
     </div>
@@ -1040,95 +996,89 @@ ${form.details.trim()}`;
 
   const renderPersonalInformation = () => (
     <>
-      <div className="faculty-form-section-title">
-        <div className="section-number">
-          01
+      <div className="faculty-simple-section">
+        <div className="faculty-simple-title">
+          <span>1</span>
+
+          <div>
+            <h3>Your Information</h3>
+            <p>
+              Confirm your basic information.
+            </p>
+          </div>
         </div>
 
-        <div>
-          <h3>Requestor Information</h3>
-          <p>
-            Provide your faculty information.
-          </p>
-        </div>
-      </div>
+        <div className="faculty-form-row">
+          <div className="faculty-form-group">
+            <label>
+              Full Name <span>*</span>
+            </label>
 
-      <div className="faculty-form-row">
+            <input
+              type="text"
+              name="fullName"
+              value={form.fullName}
+              onChange={handleChange}
+              placeholder="Full name"
+              required
+            />
+          </div>
+
+          <div className="faculty-form-group">
+            <label>
+              Email <span>*</span>
+            </label>
+
+            <input
+              type="email"
+              name="email"
+              value={form.email}
+              onChange={handleChange}
+              placeholder="Email address"
+              required
+            />
+          </div>
+        </div>
+
         <div className="faculty-form-group">
           <label>
-            Full Name <span>*</span>
+            Department <span>*</span>
           </label>
 
           <input
             type="text"
-            name="fullName"
-            value={form.fullName}
+            name="department"
+            value={form.department}
             onChange={handleChange}
-            placeholder="Enter your full name"
+            placeholder="Department"
             required
           />
         </div>
-
-        <div className="faculty-form-group">
-          <label>
-            Email <span>*</span>
-          </label>
-
-          <input
-            type="email"
-            name="email"
-            value={form.email}
-            onChange={handleChange}
-            placeholder="Enter your email address"
-            required
-          />
-        </div>
-      </div>
-
-      <div className="faculty-form-group">
-        <label>
-          Department <span>*</span>
-        </label>
-
-        <input
-          type="text"
-          name="department"
-          value={form.department}
-          onChange={handleChange}
-          placeholder="Enter your department"
-          required
-        />
       </div>
     </>
   );
 
   /* =====================================================
-     LIBRARY
+     LIBRARY FORM
   ===================================================== */
 
   const renderLibraryForm = () => (
     <>
       {renderPersonalInformation()}
 
-      <div className="faculty-form-divider" />
+      <div className="faculty-simple-divider" />
 
-      <div className="faculty-form-section-title">
-        <div className="section-number">
-          02
+      <div className="faculty-simple-section">
+        <div className="faculty-simple-title">
+          <span>2</span>
+
+          <div>
+            <h3>What do you need?</h3>
+            <p>
+              Select the library service you need.
+            </p>
+          </div>
         </div>
-
-        <div>
-          <h3>Library Services</h3>
-          <p>
-            Select all library services you need.
-          </p>
-        </div>
-      </div>
-
-      <div className="faculty-form-group">
-        <label>
-          Services Needed <span>*</span>
-        </label>
 
         <div className="faculty-check-grid">
           {[
@@ -1160,86 +1110,79 @@ ${form.details.trim()}`;
             </label>
           ))}
         </div>
+
+        {form.requestItems.includes("Other") && (
+          <div className="faculty-form-group">
+            <label>
+              Other Request
+            </label>
+
+            <input
+              type="text"
+              name="otherRequest"
+              value={form.otherRequest}
+              onChange={handleChange}
+              placeholder="Please specify"
+            />
+          </div>
+        )}
       </div>
 
-      {form.requestItems.includes("Other") && (
+      <div className="faculty-simple-divider" />
+
+      <div className="faculty-simple-section">
+        <div className="faculty-simple-title">
+          <span>3</span>
+
+          <div>
+            <h3>When do you need it?</h3>
+            <p>
+              Provide the date and time.
+            </p>
+          </div>
+        </div>
+
+        {renderScheduleFields()}
+
         <div className="faculty-form-group">
           <label>
-            Other Library Request{" "}
-            <span>*</span>
+            Details <span>*</span>
           </label>
 
-          <input
-            type="text"
-            name="otherRequest"
-            value={form.otherRequest}
+          <textarea
+            name="details"
+            value={form.details}
             onChange={handleChange}
-            placeholder="Please specify your request"
+            placeholder="Briefly describe what you need."
+            rows={5}
+            required
           />
         </div>
-      )}
-
-      <div className="faculty-form-divider" />
-
-      <div className="faculty-form-section-title">
-        <div className="section-number">
-          03
-        </div>
-
-        <div>
-          <h3>Schedule</h3>
-          <p>
-            Tell us when you need the service.
-          </p>
-        </div>
-      </div>
-
-      {renderScheduleFields()}
-
-      <div className="faculty-form-group">
-        <label>
-          Details / Description <span>*</span>
-        </label>
-
-        <textarea
-          name="details"
-          value={form.details}
-          onChange={handleChange}
-          placeholder="Please provide any important information about your request."
-          rows={6}
-          required
-        />
       </div>
     </>
   );
 
   /* =====================================================
-     AVR
+     AVR FORM
   ===================================================== */
 
   const renderAVRForm = () => (
     <>
       {renderPersonalInformation()}
 
-      <div className="faculty-form-divider" />
+      <div className="faculty-simple-divider" />
 
-      <div className="faculty-form-section-title">
-        <div className="section-number">
-          02
+      <div className="faculty-simple-section">
+        <div className="faculty-simple-title">
+          <span>2</span>
+
+          <div>
+            <h3>What do you need?</h3>
+            <p>
+              Select the equipment you need. This is optional.
+            </p>
+          </div>
         </div>
-
-        <div>
-          <h3>AVR Equipment</h3>
-          <p>
-            Select all equipment you need.
-          </p>
-        </div>
-      </div>
-
-      <div className="faculty-form-group">
-        <label>
-          Equipment Needed <span>*</span>
-        </label>
 
         <div className="faculty-check-grid">
           {[
@@ -1275,220 +1218,213 @@ ${form.details.trim()}`;
         </div>
       </div>
 
-      {form.avrEquipment.includes("Other") && (
-        <div className="faculty-form-group">
-          <label>
-            Other Equipment <span>*</span>
-          </label>
+      <div className="faculty-simple-divider" />
 
-          <input
-            type="text"
-            name="otherAVREquipment"
-            value={form.otherAVREquipment}
-            onChange={handleChange}
-            placeholder="Please specify the equipment"
-          />
-        </div>
-      )}
+      <div className="faculty-simple-section">
+        <div className="faculty-simple-title">
+          <span>3</span>
 
-      <div className="faculty-form-divider" />
-
-      <div className="faculty-form-section-title">
-        <div className="section-number">
-          03
+          <div>
+            <h3>Service / Venue</h3>
+            <p>
+              Choose what applies to your request.
+            </p>
+          </div>
         </div>
 
-        <div>
-          <h3>Location / Service</h3>
-          <p>
-            Select where the AVR service is needed.
-          </p>
-        </div>
-      </div>
-
-      <div className="faculty-form-group">
-        <label>
-          Location / Service <span>*</span>
-        </label>
-
-        <div className="faculty-check-grid">
+        <div className="faculty-choice-grid">
           {[
             "Technical Assistance",
-            "AV Room",
             "SJ Conference Room",
+            "AV Room",
             "Other",
           ].map((item) => (
             <label
-              className={`faculty-check-item ${
-                form.avrLocations.includes(item)
-                  ? "checked"
+              className={`faculty-choice-item ${
+                form.avrService === item
+                  ? "selected"
                   : ""
               }`}
               key={item}
             >
               <input
-                type="checkbox"
-                checked={form.avrLocations.includes(
-                  item
-                )}
-                onChange={() =>
-                  handleAVRLocationCheckbox(item)
+                type="radio"
+                name="avrService"
+                value={item}
+                checked={
+                  form.avrService === item
                 }
+                onChange={handleChange}
               />
 
               <span>{item}</span>
             </label>
           ))}
         </div>
-      </div>
 
-      {form.avrLocations.includes("Other") && (
+        {form.avrService === "Other" && (
+          <div className="faculty-form-group">
+            <label>
+              Other Service / Venue
+            </label>
+
+            <input
+              type="text"
+              name="otherAVRService"
+              value={form.otherAVRService}
+              onChange={handleChange}
+              placeholder="Please specify"
+            />
+          </div>
+        )}
+
         <div className="faculty-form-group">
           <label>
-            Other Location / Service{" "}
-            <span>*</span>
+            Location / Venue Needed
           </label>
 
           <input
             type="text"
-            name="otherAVRLocation"
-            value={form.otherAVRLocation}
+            name="venue"
+            value={form.venue}
             onChange={handleChange}
-            placeholder="Please specify"
+            placeholder="Example: Grade 10 Classroom, Library, Auditorium"
           />
-        </div>
-      )}
-
-      <div className="faculty-form-divider" />
-
-      <div className="faculty-form-section-title">
-        <div className="section-number">
-          04
-        </div>
-
-        <div>
-          <h3>Schedule & Details</h3>
-          <p>
-            Provide the schedule and event information.
-          </p>
         </div>
       </div>
 
-      {renderScheduleFields()}
+      <div className="faculty-simple-divider" />
 
-      <div className="faculty-form-group">
-        <label>
-          Details / Description <span>*</span>
-        </label>
+      <div className="faculty-simple-section">
+        <div className="faculty-simple-title">
+          <span>4</span>
 
-        <textarea
-          name="details"
-          value={form.details}
-          onChange={handleChange}
-          placeholder="Describe your event, activity, or AVR requirements."
-          rows={6}
-          required
-        />
+          <div>
+            <h3>Schedule & Details</h3>
+            <p>
+              Tell us when and why you need the service.
+            </p>
+          </div>
+        </div>
+
+        {renderScheduleFields()}
+
+        <div className="faculty-form-group">
+          <label>
+            Details <span>*</span>
+          </label>
+
+          <textarea
+            name="details"
+            value={form.details}
+            onChange={handleChange}
+            placeholder="Briefly describe your event or activity."
+            rows={5}
+            required
+          />
+        </div>
       </div>
     </>
   );
 
   /* =====================================================
-     TECHNICAL
+     TECHNICAL FORM
   ===================================================== */
 
   const renderTechnicalForm = () => (
     <>
       {renderPersonalInformation()}
 
-      <div className="faculty-form-divider" />
+      <div className="faculty-simple-divider" />
 
-      <div className="faculty-form-section-title">
-        <div className="section-number">
-          02
+      <div className="faculty-simple-section">
+        <div className="faculty-simple-title">
+          <span>2</span>
+
+          <div>
+            <h3>How urgent is the problem?</h3>
+            <p>
+              Select the appropriate priority.
+            </p>
+          </div>
         </div>
 
-        <div>
-          <h3>Problem Priority</h3>
-          <p>
-            Select how urgent the problem is.
-          </p>
-        </div>
-      </div>
-
-      <div className="faculty-priority-grid">
-        {[
-          {
-            value: "Low",
-            description:
-              "General issue that does not require immediate attention.",
-          },
-          {
-            value: "Medium",
-            description:
-              "Issue that needs attention but is not urgent.",
-          },
-          {
-            value: "High",
-            description:
-              "Urgent issue affecting work or an important activity.",
-          },
-        ].map((item) => (
-          <label
-            key={item.value}
-            className={`faculty-priority-option ${
-              form.priority === item.value
-                ? `selected ${item.value.toLowerCase()}`
-                : ""
-            }`}
-          >
-            <input
-              type="radio"
-              name="priority"
-              value={item.value}
-              checked={
+        <div className="faculty-priority-grid">
+          {[
+            {
+              value: "Low",
+              description:
+                "General issue.",
+            },
+            {
+              value: "Medium",
+              description:
+                "Needs attention soon.",
+            },
+            {
+              value: "High",
+              description:
+                "Urgent issue affecting work.",
+            },
+          ].map((item) => (
+            <label
+              key={item.value}
+              className={`faculty-priority-option ${
                 form.priority === item.value
-              }
-              onChange={handleChange}
-            />
+                  ? "selected"
+                  : ""
+              }`}
+            >
+              <input
+                type="radio"
+                name="priority"
+                value={item.value}
+                checked={
+                  form.priority === item.value
+                }
+                onChange={handleChange}
+              />
 
-            <div>
-              <strong>{item.value}</strong>
+              <div>
+                <strong>{item.value}</strong>
 
-              <span>{item.description}</span>
-            </div>
+                <span>
+                  {item.description}
+                </span>
+              </div>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div className="faculty-simple-divider" />
+
+      <div className="faculty-simple-section">
+        <div className="faculty-simple-title">
+          <span>3</span>
+
+          <div>
+            <h3>What is the problem?</h3>
+            <p>
+              Give us enough information to assist you.
+            </p>
+          </div>
+        </div>
+
+        <div className="faculty-form-group">
+          <label>
+            Problem / Description <span>*</span>
           </label>
-        ))}
-      </div>
 
-      <div className="faculty-form-divider" />
-
-      <div className="faculty-form-section-title">
-        <div className="section-number">
-          03
+          <textarea
+            name="details"
+            value={form.details}
+            onChange={handleChange}
+            placeholder="Example: Projector is not displaying the laptop screen."
+            rows={7}
+            required
+          />
         </div>
-
-        <div>
-          <h3>Technical Problem</h3>
-          <p>
-            Describe the issue that needs assistance.
-          </p>
-        </div>
-      </div>
-
-      <div className="faculty-form-group">
-        <label>
-          Problem / Description <span>*</span>
-        </label>
-
-        <textarea
-          name="details"
-          value={form.details}
-          onChange={handleChange}
-          placeholder="Describe the technical problem. Include the device, software, or equipment affected."
-          rows={8}
-          required
-        />
       </div>
     </>
   );
@@ -1506,10 +1442,151 @@ ${form.details.trim()}`;
   };
 
   /* =====================================================
-     REQUEST HISTORY
+     REQUEST CARD
   ===================================================== */
 
-  const renderRequestHistory = () => {
+  const renderRequestCard = (
+    request,
+    showCancel = false
+  ) => (
+    <article
+      className="faculty-request-card"
+      key={request.id}
+    >
+      <div className="faculty-request-top">
+        <div className="faculty-request-title-area">
+          <div className="faculty-request-icon">
+            {getRequestIcon(
+              request.request_type
+            )}
+          </div>
+
+          <div>
+            <h3>
+              {getRequestTitle(request)}
+            </h3>
+
+            <span>
+              Submitted{" "}
+              {request.created_at
+                ? new Date(
+                    request.created_at
+                  ).toLocaleDateString(
+                    "en-US",
+                    {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    }
+                  )
+                : "-"}
+            </span>
+          </div>
+        </div>
+
+        <div
+          className={`faculty-status ${getStatusClass(
+            request.status
+          )}`}
+        >
+          {getStatusIcon(
+            request.status
+          )}
+
+          <span>
+            {request.status ||
+              "Pending"}
+          </span>
+        </div>
+      </div>
+
+      <div className="faculty-request-details">
+        {request.request_date && (
+          <div className="faculty-request-info">
+            <CalendarDays size={17} />
+
+            <div>
+              <span>Date Needed</span>
+
+              <strong>
+                {formatDate(
+                  request.request_date
+                )}
+              </strong>
+            </div>
+          </div>
+        )}
+
+        {request.request_type ===
+          "Technical Assistance" && (
+          <div className="faculty-request-info">
+            <Flag size={17} />
+
+            <div>
+              <span>Type</span>
+
+              <strong>
+                Technical Support
+              </strong>
+            </div>
+          </div>
+        )}
+
+        {request.request_type ===
+          "AVR Request" && (
+          <div className="faculty-request-info">
+            <MapPin size={17} />
+
+            <div>
+              <span>Request</span>
+
+              <strong>
+                AVR / Equipment
+              </strong>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="faculty-request-description">
+        <span>Request Details</span>
+
+        <div>
+          {request.details}
+        </div>
+      </div>
+
+      {showCancel &&
+        request.status === "Pending" && (
+          <div className="faculty-request-actions">
+            <button
+              type="button"
+              className="faculty-cancel-request"
+              onClick={() =>
+                handleCancelRequest(
+                  request
+                )
+              }
+              disabled={
+                cancellingId === request.id
+              }
+            >
+              <Trash2 size={15} />
+
+              {cancellingId === request.id
+                ? "Cancelling..."
+                : "Cancel Request"}
+            </button>
+          </div>
+        )}
+    </article>
+  );
+
+  /* =====================================================
+     ACTIVE REQUESTS
+  ===================================================== */
+
+  const renderTrackRequests = () => {
     if (loadingRequests) {
       return (
         <div className="faculty-empty">
@@ -1520,23 +1597,23 @@ ${form.details.trim()}`;
           </strong>
 
           <span>
-            Please wait while we load your requests.
+            Please wait.
           </span>
         </div>
       );
     }
 
-    if (requests.length === 0) {
+    if (activeRequests.length === 0) {
       return (
         <div className="faculty-empty">
           <Clock3 size={28} />
 
           <strong>
-            No requests yet
+            No active requests
           </strong>
 
           <span>
-            Your submitted requests will appear here.
+            Your pending or accepted requests will appear here.
           </span>
 
           <button
@@ -1555,138 +1632,61 @@ ${form.details.trim()}`;
 
     return (
       <div className="faculty-request-list">
-        {requests.map((request) => (
-          <article
-            className="faculty-request-card"
-            key={request.id}
-          >
-            <div className="faculty-request-top">
-              <div className="faculty-request-title-area">
-                <div className="faculty-request-icon">
-                  {getRequestIcon(
-                    request.request_type
-                  )}
-                </div>
+        {activeRequests.map((request) =>
+          renderRequestCard(
+            request,
+            true
+          )
+        )}
+      </div>
+    );
+  };
 
-                <div>
-                  <h3>
-                    {getRequestTitle(request)}
-                  </h3>
+  /* =====================================================
+     HISTORY
+  ===================================================== */
 
-                  <span>
-                    Submitted{" "}
-                    {request.created_at
-                      ? new Date(
-                          request.created_at
-                        ).toLocaleDateString(
-                          "en-US",
-                          {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          }
-                        )
-                      : "-"}
-                  </span>
-                </div>
-              </div>
+  const renderHistory = () => {
+    if (loadingRequests) {
+      return (
+        <div className="faculty-empty">
+          <Clock3 size={28} />
 
-              <div
-                className={`faculty-status ${getStatusClass(
-                  request.status
-                )}`}
-              >
-                {getStatusIcon(
-                  request.status
-                )}
+          <strong>
+            Loading history...
+          </strong>
 
-                <span>
-                  {request.status ||
-                    "Pending"}
-                </span>
-              </div>
-            </div>
+          <span>
+            Please wait.
+          </span>
+        </div>
+      );
+    }
 
-            <div className="faculty-request-details">
-              {request.request_date && (
-                <div className="faculty-request-info">
-                  <CalendarDays size={17} />
+    if (historyRequests.length === 0) {
+      return (
+        <div className="faculty-empty">
+          <History size={28} />
 
-                  <div>
-                    <span>Date Needed</span>
+          <strong>
+            No request history
+          </strong>
 
-                    <strong>
-                      {formatDate(
-                        request.request_date
-                      )}
-                    </strong>
-                  </div>
-                </div>
-              )}
+          <span>
+            Completed and cancelled requests will appear here.
+          </span>
+        </div>
+      );
+    }
 
-              {request.request_type ===
-                "Technical Assistance" && (
-                <div className="faculty-request-info">
-                  <Flag size={17} />
-
-                  <div>
-                    <span>Request Type</span>
-
-                    <strong>
-                      Technical Support
-                    </strong>
-                  </div>
-                </div>
-              )}
-
-              {request.request_type ===
-                "AVR Request" && (
-                <div className="faculty-request-info">
-                  <MapPin size={17} />
-
-                  <div>
-                    <span>Service</span>
-
-                    <strong>
-                      AVR / Equipment
-                    </strong>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="faculty-request-description">
-              <span>Request Details</span>
-
-              <div>
-                {request.details}
-              </div>
-            </div>
-
-            {request.status === "Pending" && (
-              <div className="faculty-request-actions">
-                <button
-                  type="button"
-                  className="faculty-cancel-request"
-                  onClick={() =>
-                    handleCancelRequest(
-                      request
-                    )
-                  }
-                  disabled={
-                    cancellingId === request.id
-                  }
-                >
-                  <Trash2 size={15} />
-
-                  {cancellingId === request.id
-                    ? "Cancelling..."
-                    : "Cancel Request"}
-                </button>
-              </div>
-            )}
-          </article>
-        ))}
+    return (
+      <div className="faculty-request-list">
+        {historyRequests.map((request) =>
+          renderRequestCard(
+            request,
+            false
+          )
+        )}
       </div>
     );
   };
@@ -1727,7 +1727,8 @@ ${form.details.trim()}`;
           className={`faculty-notification ${notification.type}`}
         >
           <div className="faculty-notification-icon">
-            {notification.type === "success" ? (
+            {notification.type ===
+            "success" ? (
               <CheckCircle2 size={20} />
             ) : (
               <AlertCircle size={20} />
@@ -1754,231 +1755,80 @@ ${form.details.trim()}`;
       )}
 
       {/* =================================================
-          LOGOUT CONFIRMATION MODAL
-          INLINE DESIGN — NO CSS FILE REQUIRED
+          LOGOUT MODAL
       ================================================= */}
 
       {showLogoutModal && (
         <div
+          className="faculty-modal-overlay"
           role="dialog"
           aria-modal="true"
-          aria-labelledby="logout-modal-title"
           onClick={closeLogoutModal}
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 9999,
-            background: "rgba(5, 20, 45, 0.60)",
-            backdropFilter: "blur(4px)",
-            WebkitBackdropFilter: "blur(4px)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "20px",
-          }}
         >
           <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              width: "100%",
-              maxWidth: "420px",
-              background: "#ffffff",
-              borderRadius: "5px",
-              boxShadow:
-                "0 20px 60px rgba(0, 20, 50, 0.25)",
-              overflow: "hidden",
-              border: "1px solid #dbe3ee",
-              fontFamily:
-                "Arial, Helvetica, sans-serif",
-            }}
+            className="faculty-logout-modal"
+            onClick={(e) =>
+              e.stopPropagation()
+            }
           >
-            {/* Modal Top */}
-            <div
-              style={{
-                background:
-                  "linear-gradient(135deg, #062c5c 0%, #0b477f 100%)",
-                padding: "22px 24px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "13px",
-                }}
-              >
-                <div
-                  style={{
-                    width: "42px",
-                    height: "42px",
-                    borderRadius: "5px",
-                    background:
-                      "rgba(255,255,255,0.14)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "#ffffff",
-                  }}
-                >
-                  <LogOut size={21} />
+            <div className="faculty-modal-header">
+              <div className="faculty-modal-title">
+                <div>
+                  <LogOut size={20} />
                 </div>
 
-                <div>
-                  <h3
-                    id="logout-modal-title"
-                    style={{
-                      margin: 0,
-                      color: "#ffffff",
-                      fontSize: "18px",
-                      fontWeight: 700,
-                      lineHeight: 1.2,
-                    }}
-                  >
+                <section>
+                  <h3>
                     Confirm Logout
                   </h3>
 
-                  <span
-                    style={{
-                      display: "block",
-                      marginTop: "4px",
-                      color: "#dce9f7",
-                      fontSize: "12px",
-                    }}
-                  >
+                  <span>
                     Faculty Portal
                   </span>
-                </div>
+                </section>
               </div>
 
               <button
                 type="button"
                 onClick={closeLogoutModal}
                 disabled={loggingOut}
-                aria-label="Close logout confirmation"
-                style={{
-                  width: "32px",
-                  height: "32px",
-                  border: "none",
-                  borderRadius: "5px",
-                  background:
-                    "rgba(255,255,255,0.10)",
-                  color: "#ffffff",
-                  cursor: loggingOut
-                    ? "not-allowed"
-                    : "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  opacity: loggingOut ? 0.5 : 1,
-                }}
               >
                 <X size={18} />
               </button>
             </div>
 
-            {/* Modal Body */}
-            <div
-              style={{
-                padding: "28px 24px 24px",
-              }}
-            >
-              <div
-                style={{
-                  width: "52px",
-                  height: "52px",
-                  borderRadius: "5px",
-                  background: "#eef4fa",
-                  color: "#0b477f",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginBottom: "17px",
-                }}
-              >
+            <div className="faculty-modal-body">
+              <div className="faculty-modal-alert">
                 <AlertCircle size={27} />
               </div>
 
-              <h4
-                style={{
-                  margin: "0 0 8px",
-                  color: "#111827",
-                  fontSize: "20px",
-                  fontWeight: 700,
-                }}
-              >
+              <h4>
                 Are you sure you want to logout?
               </h4>
 
-              <p
-                style={{
-                  margin: 0,
-                  color: "#5f6b7a",
-                  fontSize: "14px",
-                  lineHeight: 1.6,
-                }}
-              >
-                You will be signed out of your faculty
-                account and returned to the home page.
+              <p>
+                You will be signed out of your
+                faculty account and returned
+                to the home page.
               </p>
 
-              {/* Buttons */}
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "flex-end",
-                  gap: "10px",
-                  marginTop: "25px",
-                }}
-              >
+              <div className="faculty-modal-actions">
                 <button
                   type="button"
-                  onClick={closeLogoutModal}
+                  className="faculty-modal-stay"
+                  onClick={
+                    closeLogoutModal
+                  }
                   disabled={loggingOut}
-                  style={{
-                    minWidth: "105px",
-                    height: "42px",
-                    padding: "0 18px",
-                    borderRadius: "5px",
-                    border: "1px solid #cbd5e1",
-                    background: "#ffffff",
-                    color: "#263445",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    cursor: loggingOut
-                      ? "not-allowed"
-                      : "pointer",
-                    opacity: loggingOut ? 0.6 : 1,
-                  }}
                 >
                   Stay
                 </button>
 
                 <button
                   type="button"
+                  className="faculty-modal-logout"
                   onClick={handleLogout}
                   disabled={loggingOut}
-                  style={{
-                    minWidth: "120px",
-                    height: "42px",
-                    padding: "0 18px",
-                    borderRadius: "5px",
-                    border: "1px solid #062c5c",
-                    background: "#062c5c",
-                    color: "#ffffff",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    cursor: loggingOut
-                      ? "not-allowed"
-                      : "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "8px",
-                    opacity: loggingOut ? 0.7 : 1,
-                  }}
                 >
                   <LogOut size={16} />
 
@@ -2004,10 +1854,10 @@ ${form.details.trim()}`;
             className="faculty-brand"
           >
             <div className="faculty-logo">
-<img
-  src="/hfalogo.png"
-  alt="Instructional Media Center"
-/>
+              <img
+                src="/hfalogo.png"
+                alt="Instructional Media Center"
+              />
             </div>
 
             <div className="faculty-brand-text">
@@ -2028,7 +1878,9 @@ ${form.details.trim()}`;
               </div>
 
               <div>
-                <span>Logged in as</span>
+                <span>
+                  Logged in as
+                </span>
 
                 <strong>
                   {user?.email ||
@@ -2044,36 +1896,25 @@ ${form.details.trim()}`;
               type="button"
             >
               <LogOut size={17} />
-              <span>Logout</span>
+
+              <span>
+                Logout
+              </span>
             </button>
           </div>
-
         </div>
       </header>
 
       {/* =================================================
-          MARQUEE
+          NOTICE
       ================================================= */}
 
-      <div className="faculty-marquee">
-        <div className="faculty-marquee-track">
-          <span>
-            Please submit requests in advance to
-            allow proper scheduling and preparation.
-          </span>
-
-          <span>
-            • Instructional Media Center Faculty Portal
-          </span>
-
-          <span>
-            • Library • AVR • Technical Assistance
-          </span>
-
-          <span>
-            • Please check your request status regularly.
-          </span>
-        </div>
+      <div className="faculty-notice">
+        <span>
+          Submit your request in advance so the
+          Instructional Media Center can prepare
+          the needed service or equipment.
+        </span>
       </div>
 
       {/* =================================================
@@ -2083,7 +1924,7 @@ ${form.details.trim()}`;
       <main className="faculty-main">
         <div className="faculty-container">
 
-          {/* PAGE HEADING */}
+          {/* PAGE TITLE */}
 
           <section className="faculty-page-heading">
             <div>
@@ -2092,36 +1933,57 @@ ${form.details.trim()}`;
               </span>
 
               <h1>
-                {activeSection === "request"
-                  ? "Request Services"
-                  : "Track Requests"}
+                {activeSection ===
+                "request"
+                  ? "Request a Service"
+                  : activeSection ===
+                    "track"
+                  ? "Track My Requests"
+                  : "Request History"}
               </h1>
 
               <p>
-                {activeSection === "request"
-                  ? "Submit a request to the Instructional Media Center."
-                  : "View your submitted requests and monitor their status."}
+                {activeSection ===
+                "request"
+                  ? "Choose a service and submit your request."
+                  : activeSection ===
+                    "track"
+                  ? "Check the status of your active requests."
+                  : "View requests that have already been completed or cancelled."}
               </p>
             </div>
 
             <div className="faculty-heading-mark">
-              <BookOpen size={28} />
+              {activeSection ===
+              "request" ? (
+                <Send size={25} />
+              ) : activeSection ===
+                "track" ? (
+                <Clock3 size={25} />
+              ) : (
+                <History size={25} />
+              )}
             </div>
           </section>
 
-          {/* MAIN NAVIGATION */}
+          {/* =================================================
+              MAIN NAVIGATION
+          ================================================= */}
 
           <div className="faculty-main-tabs">
 
             <button
               type="button"
               className={
-                activeSection === "request"
+                activeSection ===
+                "request"
                   ? "active"
                   : ""
               }
               onClick={() =>
-                changeSection("request")
+                changeSection(
+                  "request"
+                )
               }
             >
               <Send size={18} />
@@ -2134,12 +1996,15 @@ ${form.details.trim()}`;
             <button
               type="button"
               className={
-                activeSection === "track"
+                activeSection ===
+                "track"
                   ? "active"
                   : ""
               }
               onClick={() =>
-                changeSection("track")
+                changeSection(
+                  "track"
+                )
               }
             >
               <Clock3 size={18} />
@@ -2148,40 +2013,75 @@ ${form.details.trim()}`;
                 Track Requests
               </span>
 
-              {requests.length > 0 && (
+              {activeRequests.length >
+                0 && (
                 <b className="faculty-tab-count">
-                  {requests.length}
+                  {activeRequests.length}
+                </b>
+              )}
+            </button>
+
+            <button
+              type="button"
+              className={
+                activeSection ===
+                "history"
+                  ? "active"
+                  : ""
+              }
+              onClick={() =>
+                changeSection(
+                  "history"
+                )
+              }
+            >
+              <History size={18} />
+
+              <span>
+                History
+              </span>
+
+              {historyRequests.length >
+                0 && (
+                <b className="faculty-tab-count">
+                  {historyRequests.length}
                 </b>
               )}
             </button>
 
           </div>
 
-          {/* REQUEST */}
+          {/* =================================================
+              REQUEST SERVICE
+          ================================================= */}
 
-          {activeSection === "request" && (
+          {activeSection ===
+            "request" && (
             <>
 
-              {/* SERVICE SELECTOR */}
+              {/* SERVICE TABS */}
 
               <div className="faculty-service-tabs">
 
                 <button
                   type="button"
                   className={
-                    activeTab === "library"
+                    activeTab ===
+                    "library"
                       ? "active"
                       : ""
                   }
                   onClick={() =>
-                    changeTab("library")
+                    changeTab(
+                      "library"
+                    )
                   }
                 >
-                  <BookOpen size={19} />
+                  <BookOpen size={20} />
 
                   <div>
                     <strong>
-                      Library Request
+                      Library
                     </strong>
 
                     <span>
@@ -2201,11 +2101,13 @@ ${form.details.trim()}`;
                     changeTab("avr")
                   }
                 >
-                  <MonitorPlay size={19} />
+                  <MonitorPlay
+                    size={20}
+                  />
 
                   <div>
                     <strong>
-                      AVR Request
+                      AVR
                     </strong>
 
                     <span>
@@ -2217,19 +2119,22 @@ ${form.details.trim()}`;
                 <button
                   type="button"
                   className={
-                    activeTab === "technical"
+                    activeTab ===
+                    "technical"
                       ? "active"
                       : ""
                   }
                   onClick={() =>
-                    changeTab("technical")
+                    changeTab(
+                      "technical"
+                    )
                   }
                 >
-                  <Wrench size={19} />
+                  <Wrench size={20} />
 
                   <div>
                     <strong>
-                      Technical Assistance
+                      Technical
                     </strong>
 
                     <span>
@@ -2240,7 +2145,7 @@ ${form.details.trim()}`;
 
               </div>
 
-              {/* FORM CARD */}
+              {/* FORM */}
 
               <section className="faculty-card">
 
@@ -2248,43 +2153,58 @@ ${form.details.trim()}`;
 
                   <div>
                     <span className="faculty-label">
-                      SERVICE REQUEST
+                      NEW REQUEST
                     </span>
 
                     <h2>
-                      {activeTab === "library" &&
-                        "Library Request"}
+                      {activeTab ===
+                        "library" &&
+                        "Library Service"}
 
-                      {activeTab === "avr" &&
-                        "AVR Request"}
+                      {activeTab ===
+                        "avr" &&
+                        "AVR Service"}
 
-                      {activeTab === "technical" &&
+                      {activeTab ===
+                        "technical" &&
                         "Technical Assistance"}
                     </h2>
 
                     <p>
-                      {activeTab === "library" &&
-                        "Tell us what library service you need."}
+                      {activeTab ===
+                        "library" &&
+                        "Request library services and spaces."}
 
-                      {activeTab === "avr" &&
-                        "Select the equipment and location you need."}
+                      {activeTab ===
+                        "avr" &&
+                        "Request equipment, technical assistance, or a venue."}
 
-                      {activeTab === "technical" &&
+                      {activeTab ===
+                        "technical" &&
                         "Report a technical problem to the support team."}
                     </p>
                   </div>
 
                   <div className="faculty-card-icon">
-                    {activeTab === "library" && (
-                      <BookOpen size={23} />
+                    {activeTab ===
+                      "library" && (
+                      <BookOpen
+                        size={22}
+                      />
                     )}
 
-                    {activeTab === "avr" && (
-                      <MonitorPlay size={23} />
+                    {activeTab ===
+                      "avr" && (
+                      <MonitorPlay
+                        size={22}
+                      />
                     )}
 
-                    {activeTab === "technical" && (
-                      <Wrench size={23} />
+                    {activeTab ===
+                      "technical" && (
+                      <Wrench
+                        size={22}
+                      />
                     )}
                   </div>
 
@@ -2292,9 +2212,10 @@ ${form.details.trim()}`;
 
                 <form
                   className="faculty-form"
-                  onSubmit={handleSubmit}
+                  onSubmit={
+                    handleSubmit
+                  }
                 >
-
                   {renderFormContent()}
 
                   <div className="faculty-form-footer">
@@ -2302,45 +2223,55 @@ ${form.details.trim()}`;
                     <button
                       type="button"
                       className="faculty-reset-button"
-                      onClick={resetForm}
-                      disabled={submitting}
+                      onClick={
+                        resetForm
+                      }
+                      disabled={
+                        submitting
+                      }
                     >
-                      Clear Form
+                      Clear
                     </button>
 
                     <button
                       type="submit"
                       className="faculty-submit-button"
-                      disabled={submitting}
+                      disabled={
+                        submitting
+                      }
                     >
                       {submitting ? (
                         "Submitting..."
                       ) : (
                         <>
-                          <Send size={17} />
+                          <Send
+                            size={17}
+                          />
+
                           Submit Request
                         </>
                       )}
                     </button>
 
                   </div>
-
                 </form>
-
               </section>
             </>
           )}
 
-          {/* TRACK */}
+          {/* =================================================
+              TRACK REQUESTS
+          ================================================= */}
 
-          {activeSection === "track" && (
+          {activeSection ===
+            "track" && (
             <section className="faculty-status-section">
 
               <div className="faculty-section-heading">
 
                 <div>
                   <span className="faculty-label">
-                    REQUEST TRACKING
+                    ACTIVE REQUESTS
                   </span>
 
                   <h2>
@@ -2348,18 +2279,58 @@ ${form.details.trim()}`;
                   </h2>
 
                   <p>
-                    View your submitted requests and
-                    their current status.
+                    These are requests that are
+                    still being processed.
                   </p>
                 </div>
 
                 <div className="faculty-request-count">
-                  {requests.length}
+                  {
+                    activeRequests.length
+                  }
                 </div>
 
               </div>
 
-              {renderRequestHistory()}
+              {renderTrackRequests()}
+
+            </section>
+          )}
+
+          {/* =================================================
+              HISTORY
+          ================================================= */}
+
+          {activeSection ===
+            "history" && (
+            <section className="faculty-status-section">
+
+              <div className="faculty-section-heading">
+
+                <div>
+                  <span className="faculty-label">
+                    REQUEST HISTORY
+                  </span>
+
+                  <h2>
+                    Completed & Cancelled
+                  </h2>
+
+                  <p>
+                    Previous requests are stored
+                    here for your reference.
+                  </p>
+                </div>
+
+                <div className="faculty-request-count">
+                  {
+                    historyRequests.length
+                  }
+                </div>
+
+              </div>
+
+              {renderHistory()}
 
             </section>
           )}
@@ -2368,12 +2339,9 @@ ${form.details.trim()}`;
       </main>
 
       <footer className="faculty-footer">
-        <div>
-          © 2026 Instructional Media Center.
-          All rights reserved.
-        </div>
+        © 2026 Instructional Media Center.
+        All rights reserved.
       </footer>
-
     </div>
   );
 }
