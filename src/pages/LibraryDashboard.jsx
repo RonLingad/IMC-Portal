@@ -131,6 +131,31 @@ function LibraryDashboard() {
     }
   };
 
+  // =====================================================
+  // LIBRARY REQUEST FILTER
+  // =====================================================
+  // IMPORTANT:
+  // The library_requests table may contain requests
+  // for Library, AVR, and Technical.
+  //
+  // Library Dashboard should ONLY see Library requests.
+  // =====================================================
+
+  const isLibraryRequest = (request) => {
+    const type = (request.request_type || "")
+      .trim()
+      .toLowerCase();
+
+    return (
+      type === "library" ||
+      type === "library request"
+    );
+  };
+
+  // =====================================================
+  // LOAD LIBRARY DATA
+  // =====================================================
+
   const loadLibraryData = async () => {
     try {
       const [
@@ -179,19 +204,46 @@ function LibraryDashboard() {
           .maybeSingle(),
       ]);
 
-      if (schedulesResult.error) throw schedulesResult.error;
-      if (spacesResult.error) throw spacesResult.error;
-      if (newsResult.error) throw newsResult.error;
-      if (clubsResult.error) throw clubsResult.error;
-      if (clubNewsResult.error) throw clubNewsResult.error;
-      if (requestsResult.error) throw requestsResult.error;
+      if (schedulesResult.error) {
+        throw schedulesResult.error;
+      }
+
+      if (spacesResult.error) {
+        throw spacesResult.error;
+      }
+
+      if (newsResult.error) {
+        throw newsResult.error;
+      }
+
+      if (clubsResult.error) {
+        throw clubsResult.error;
+      }
+
+      if (clubNewsResult.error) {
+        throw clubNewsResult.error;
+      }
+
+      if (requestsResult.error) {
+        throw requestsResult.error;
+      }
 
       setSchedules(schedulesResult.data || []);
       setSpaces(spacesResult.data || []);
       setNews(newsResult.data || []);
       setClubs(clubsResult.data || []);
       setClubNews(clubNewsResult.data || []);
-      setRequests(requestsResult.data || []);
+
+      // =================================================
+      // IMPORTANT FIX
+      // ONLY STORE LIBRARY REQUESTS
+      // =================================================
+
+      const libraryRequests = (
+        requestsResult.data || []
+      ).filter(isLibraryRequest);
+
+      setRequests(libraryRequests);
 
       if (settingsResult.data) {
         setVision(settingsResult.data.vision || "");
@@ -313,9 +365,11 @@ function LibraryDashboard() {
   );
 
   const historyRequests = requests.filter((request) =>
-    ["Completed", "Cancelled", "Not Available"].includes(
-      request.status
-    )
+    [
+      "Completed",
+      "Cancelled",
+      "Not Available",
+    ].includes(request.status)
   );
 
   // =====================================================
@@ -461,7 +515,10 @@ function LibraryDashboard() {
         .from("library-images")
         .remove([filePath]);
     } catch (error) {
-      console.error("Image deletion error:", error);
+      console.error(
+        "Image deletion error:",
+        error
+      );
     }
   };
 
@@ -472,7 +529,10 @@ function LibraryDashboard() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (modalType !== "schedule" && modalType !== "club") {
+    if (
+      modalType !== "schedule" &&
+      modalType !== "club"
+    ) {
       if (!form.title.trim()) {
         showAlert(
           "warning",
@@ -501,7 +561,10 @@ function LibraryDashboard() {
       }
     }
 
-    if (modalType === "club" && !form.name.trim()) {
+    if (
+      modalType === "club" &&
+      !form.name.trim()
+    ) {
       showAlert(
         "warning",
         "Missing club name",
@@ -513,7 +576,8 @@ function LibraryDashboard() {
     setSaving(true);
 
     try {
-      let imageUrl = form.existingImage || null;
+      let imageUrl =
+        form.existingImage || null;
 
       if (form.image) {
         imageUrl = await uploadImage(form.image);
@@ -533,18 +597,21 @@ function LibraryDashboard() {
         };
 
         if (editingItem) {
-          const { data, error } = await supabase
-            .from("library_spaces")
-            .update(payload)
-            .eq("id", editingItem.id)
-            .select()
-            .single();
+          const { data, error } =
+            await supabase
+              .from("library_spaces")
+              .update(payload)
+              .eq("id", editingItem.id)
+              .select()
+              .single();
 
           if (error) throw error;
 
           setSpaces((current) =>
             current.map((item) =>
-              item.id === editingItem.id ? data : item
+              item.id === editingItem.id
+                ? data
+                : item
             )
           );
 
@@ -553,21 +620,28 @@ function LibraryDashboard() {
             editingItem.image_url &&
             editingItem.image_url !== imageUrl
           ) {
-            await deleteImageFromUrl(editingItem.image_url);
+            await deleteImageFromUrl(
+              editingItem.image_url
+            );
           }
         } else {
-          const { data, error } = await supabase
-            .from("library_spaces")
-            .insert({
-              ...payload,
-              created_at: new Date().toISOString(),
-            })
-            .select()
-            .single();
+          const { data, error } =
+            await supabase
+              .from("library_spaces")
+              .insert({
+                ...payload,
+                created_at:
+                  new Date().toISOString(),
+              })
+              .select()
+              .single();
 
           if (error) throw error;
 
-          setSpaces((current) => [data, ...current]);
+          setSpaces((current) => [
+            data,
+            ...current,
+          ]);
         }
       }
 
@@ -585,18 +659,21 @@ function LibraryDashboard() {
         };
 
         if (editingItem) {
-          const { data, error } = await supabase
-            .from("library_news")
-            .update(payload)
-            .eq("id", editingItem.id)
-            .select()
-            .single();
+          const { data, error } =
+            await supabase
+              .from("library_news")
+              .update(payload)
+              .eq("id", editingItem.id)
+              .select()
+              .single();
 
           if (error) throw error;
 
           setNews((current) =>
             current.map((item) =>
-              item.id === editingItem.id ? data : item
+              item.id === editingItem.id
+                ? data
+                : item
             )
           );
 
@@ -605,21 +682,28 @@ function LibraryDashboard() {
             editingItem.image_url &&
             editingItem.image_url !== imageUrl
           ) {
-            await deleteImageFromUrl(editingItem.image_url);
+            await deleteImageFromUrl(
+              editingItem.image_url
+            );
           }
         } else {
-          const { data, error } = await supabase
-            .from("library_news")
-            .insert({
-              ...payload,
-              created_at: new Date().toISOString(),
-            })
-            .select()
-            .single();
+          const { data, error } =
+            await supabase
+              .from("library_news")
+              .insert({
+                ...payload,
+                created_at:
+                  new Date().toISOString(),
+              })
+              .select()
+              .single();
 
           if (error) throw error;
 
-          setNews((current) => [data, ...current]);
+          setNews((current) => [
+            data,
+            ...current,
+          ]);
         }
       }
 
@@ -630,24 +714,28 @@ function LibraryDashboard() {
       if (modalType === "club") {
         const payload = {
           name: form.name.trim(),
-          description: form.description.trim(),
+          description:
+            form.description.trim(),
           image_url: imageUrl,
           updated_at: new Date().toISOString(),
         };
 
         if (editingItem) {
-          const { data, error } = await supabase
-            .from("library_clubs")
-            .update(payload)
-            .eq("id", editingItem.id)
-            .select()
-            .single();
+          const { data, error } =
+            await supabase
+              .from("library_clubs")
+              .update(payload)
+              .eq("id", editingItem.id)
+              .select()
+              .single();
 
           if (error) throw error;
 
           setClubs((current) =>
             current.map((item) =>
-              item.id === editingItem.id ? data : item
+              item.id === editingItem.id
+                ? data
+                : item
             )
           );
 
@@ -656,21 +744,28 @@ function LibraryDashboard() {
             editingItem.image_url &&
             editingItem.image_url !== imageUrl
           ) {
-            await deleteImageFromUrl(editingItem.image_url);
+            await deleteImageFromUrl(
+              editingItem.image_url
+            );
           }
         } else {
-          const { data, error } = await supabase
-            .from("library_clubs")
-            .insert({
-              ...payload,
-              created_at: new Date().toISOString(),
-            })
-            .select()
-            .single();
+          const { data, error } =
+            await supabase
+              .from("library_clubs")
+              .insert({
+                ...payload,
+                created_at:
+                  new Date().toISOString(),
+              })
+              .select()
+              .single();
 
           if (error) throw error;
 
-          setClubs((current) => [data, ...current]);
+          setClubs((current) => [
+            data,
+            ...current,
+          ]);
         }
       }
 
@@ -688,18 +783,21 @@ function LibraryDashboard() {
         };
 
         if (editingItem) {
-          const { data, error } = await supabase
-            .from("library_club_news")
-            .update(payload)
-            .eq("id", editingItem.id)
-            .select()
-            .single();
+          const { data, error } =
+            await supabase
+              .from("library_club_news")
+              .update(payload)
+              .eq("id", editingItem.id)
+              .select()
+              .single();
 
           if (error) throw error;
 
           setClubNews((current) =>
             current.map((item) =>
-              item.id === editingItem.id ? data : item
+              item.id === editingItem.id
+                ? data
+                : item
             )
           );
 
@@ -708,21 +806,28 @@ function LibraryDashboard() {
             editingItem.image_url &&
             editingItem.image_url !== imageUrl
           ) {
-            await deleteImageFromUrl(editingItem.image_url);
+            await deleteImageFromUrl(
+              editingItem.image_url
+            );
           }
         } else {
-          const { data, error } = await supabase
-            .from("library_club_news")
-            .insert({
-              ...payload,
-              created_at: new Date().toISOString(),
-            })
-            .select()
-            .single();
+          const { data, error } =
+            await supabase
+              .from("library_club_news")
+              .insert({
+                ...payload,
+                created_at:
+                  new Date().toISOString(),
+              })
+              .select()
+              .single();
 
           if (error) throw error;
 
-          setClubNews((current) => [data, ...current]);
+          setClubNews((current) => [
+            data,
+            ...current,
+          ]);
         }
       }
 
@@ -739,33 +844,41 @@ function LibraryDashboard() {
         };
 
         if (editingItem) {
-          const { data, error } = await supabase
-            .from("library_hours")
-            .update(payload)
-            .eq("id", editingItem.id)
-            .select()
-            .single();
+          const { data, error } =
+            await supabase
+              .from("library_hours")
+              .update(payload)
+              .eq("id", editingItem.id)
+              .select()
+              .single();
 
           if (error) throw error;
 
           setSchedules((current) =>
             current.map((item) =>
-              item.id === editingItem.id ? data : item
+              item.id === editingItem.id
+                ? data
+                : item
             )
           );
         } else {
-          const { data, error } = await supabase
-            .from("library_hours")
-            .insert({
-              ...payload,
-              created_at: new Date().toISOString(),
-            })
-            .select()
-            .single();
+          const { data, error } =
+            await supabase
+              .from("library_hours")
+              .insert({
+                ...payload,
+                created_at:
+                  new Date().toISOString(),
+              })
+              .select()
+              .single();
 
           if (error) throw error;
 
-          setSchedules((current) => [...current, data]);
+          setSchedules((current) => [
+            ...current,
+            data,
+          ]);
         }
       }
 
@@ -773,7 +886,9 @@ function LibraryDashboard() {
 
       showAlert(
         "success",
-        editingItem ? "Updated successfully" : "Added successfully",
+        editingItem
+          ? "Updated successfully"
+          : "Added successfully",
         "The information has been saved."
       );
     } catch (error) {
@@ -814,7 +929,9 @@ function LibraryDashboard() {
       if (error) throw error;
 
       setter((current) =>
-        current.filter((item) => item.id !== id)
+        current.filter(
+          (item) => item.id !== id
+        )
       );
 
       if (imageUrl) {
@@ -852,12 +969,13 @@ function LibraryDashboard() {
     }
 
     try {
-      const { data, error } = await supabase.rpc(
-        "assign_library_request",
-        {
-          p_request_id: requestId,
-        }
-      );
+      const { data, error } =
+        await supabase.rpc(
+          "assign_library_request",
+          {
+            p_request_id: requestId,
+          }
+        );
 
       if (error) throw error;
 
@@ -870,9 +988,22 @@ function LibraryDashboard() {
         return;
       }
 
+      // Extra protection:
+      // Never put non-library request into this dashboard.
+      if (!isLibraryRequest(data)) {
+        showAlert(
+          "error",
+          "Invalid request",
+          "This request does not belong to the Library."
+        );
+        return;
+      }
+
       setRequests((current) =>
         current.map((request) =>
-          request.id === requestId ? data : request
+          request.id === requestId
+            ? data
+            : request
         )
       );
 
@@ -909,23 +1040,31 @@ function LibraryDashboard() {
     }
 
     try {
-      const { data, error } = await supabase
-        .from("library_requests")
-        .update({
-          status: "Completed",
-          completed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", request.id)
-        .eq("assigned_staff_id", currentUser.id)
-        .select()
-        .single();
+      const { data, error } =
+        await supabase
+          .from("library_requests")
+          .update({
+            status: "Completed",
+            completed_at:
+              new Date().toISOString(),
+            updated_at:
+              new Date().toISOString(),
+          })
+          .eq("id", request.id)
+          .eq(
+            "assigned_staff_id",
+            currentUser.id
+          )
+          .select()
+          .single();
 
       if (error) throw error;
 
       setRequests((current) =>
         current.map((item) =>
-          item.id === request.id ? data : item
+          item.id === request.id
+            ? data
+            : item
         )
       );
 
@@ -968,23 +1107,31 @@ function LibraryDashboard() {
     if (!confirmed) return;
 
     try {
-      const { data, error } = await supabase
-        .from("library_requests")
-        .update({
-          status: "Cancelled",
-          cancelled_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", request.id)
-        .eq("assigned_staff_id", currentUser.id)
-        .select()
-        .single();
+      const { data, error } =
+        await supabase
+          .from("library_requests")
+          .update({
+            status: "Cancelled",
+            cancelled_at:
+              new Date().toISOString(),
+            updated_at:
+              new Date().toISOString(),
+          })
+          .eq("id", request.id)
+          .eq(
+            "assigned_staff_id",
+            currentUser.id
+          )
+          .select()
+          .single();
 
       if (error) throw error;
 
       setRequests((current) =>
         current.map((item) =>
-          item.id === request.id ? data : item
+          item.id === request.id
+            ? data
+            : item
         )
       );
 
@@ -1009,7 +1156,8 @@ function LibraryDashboard() {
   const isAssignedToCurrentUser = (request) => {
     return (
       currentUser &&
-      request.assigned_staff_id === currentUser.id
+      request.assigned_staff_id ===
+        currentUser.id
     );
   };
 
@@ -1019,9 +1167,21 @@ function LibraryDashboard() {
 
   const filteredRequests = useMemo(() => {
     return requests.filter((request) => {
-      const isActive = ["Pending", "Accepted"].includes(
-        request.status
-      );
+      // =================================================
+      // EXTRA SAFETY
+      // =================================================
+      // Even if something accidentally enters state,
+      // the Library Dashboard will still reject it.
+      // =================================================
+
+      if (!isLibraryRequest(request)) {
+        return false;
+      }
+
+      const isActive = [
+        "Pending",
+        "Accepted",
+      ].includes(request.status);
 
       if (!isActive) return false;
 
@@ -1046,9 +1206,13 @@ function LibraryDashboard() {
 
       const matchesStatus =
         requestStatusFilter === "All" ||
-        request.status === requestStatusFilter;
+        request.status ===
+          requestStatusFilter;
 
-      return matchesSearch && matchesStatus;
+      return (
+        matchesSearch &&
+        matchesStatus
+      );
     });
   }, [
     requests,
@@ -1056,8 +1220,17 @@ function LibraryDashboard() {
     requestStatusFilter,
   ]);
 
+  // =====================================================
+  // HISTORY FILTER
+  // =====================================================
+
   const filteredHistory = useMemo(() => {
     return requests.filter((request) => {
+      // Extra Library-only protection
+      if (!isLibraryRequest(request)) {
+        return false;
+      }
+
       const isHistory = [
         "Completed",
         "Cancelled",
@@ -1087,9 +1260,13 @@ function LibraryDashboard() {
 
       const matchesStatus =
         historyStatusFilter === "All" ||
-        request.status === historyStatusFilter;
+        request.status ===
+          historyStatusFilter;
 
-      return matchesSearch && matchesStatus;
+      return (
+        matchesSearch &&
+        matchesStatus
+      );
     });
   }, [
     requests,
@@ -1129,7 +1306,9 @@ function LibraryDashboard() {
           icon={<ClipboardList size={22} />}
           title="Pending Requests"
           value={pendingRequests.length}
-          onClick={() => changeSection("requests")}
+          onClick={() =>
+            changeSection("requests")
+          }
         />
 
         <StatCard
@@ -1140,39 +1319,53 @@ function LibraryDashboard() {
               (request) =>
                 request.assigned_staff_id ===
                   currentUser?.id &&
-                request.status === "Accepted"
+                request.status ===
+                  "Accepted" &&
+                isLibraryRequest(request)
             ).length
           }
-          onClick={() => changeSection("requests")}
+          onClick={() =>
+            changeSection("requests")
+          }
         />
 
         <StatCard
           icon={<History size={22} />}
           title="History"
           value={historyRequests.length}
-          onClick={() => changeSection("history")}
+          onClick={() =>
+            changeSection("history")
+          }
         />
 
         <StatCard
           icon={<Building2 size={22} />}
           title="Library Spaces"
           value={spaces.length}
-          onClick={() => changeSection("spaces")}
+          onClick={() =>
+            changeSection("spaces")
+          }
         />
       </div>
 
       <div className="library-section-card">
         <div className="library-section-title">
           <div>
-            <h2>Requests Requiring Attention</h2>
+            <h2>
+              Requests Requiring Attention
+            </h2>
+
             <p>
-              Requests that are waiting for a staff member.
+              Requests that are waiting for a
+              staff member.
             </p>
           </div>
 
           <button
             className="library-secondary-button"
-            onClick={() => changeSection("requests")}
+            onClick={() =>
+              changeSection("requests")
+            }
           >
             View Requests
           </button>
@@ -1197,7 +1390,9 @@ function LibraryDashboard() {
       title="Operating Hours"
       description="Manage the library's operating schedule."
       addLabel="Add Schedule"
-      onAdd={() => openAddModal("schedule")}
+      onAdd={() =>
+        openAddModal("schedule")
+      }
     >
       <div className="library-table-wrapper">
         <table className="library-table">
@@ -1220,12 +1415,18 @@ function LibraryDashboard() {
               schedules.map((schedule) => (
                 <tr key={schedule.id}>
                   <td>
-                    <strong>{schedule.day}</strong>
+                    <strong>
+                      {schedule.day}
+                    </strong>
                   </td>
 
-                  <td>{schedule.opening_time}</td>
+                  <td>
+                    {schedule.opening_time}
+                  </td>
 
-                  <td>{schedule.closing_time}</td>
+                  <td>
+                    {schedule.closing_time}
+                  </td>
 
                   <td>
                     <ActionButtons
@@ -1317,7 +1518,9 @@ function LibraryDashboard() {
       title="Spaces & Areas"
       description="Manage library spaces and areas."
       addLabel="Add Space"
-      onAdd={() => openAddModal("space")}
+      onAdd={() =>
+        openAddModal("space")
+      }
     >
       <div className="library-content-list">
         {spaces.length === 0 ? (
@@ -1331,7 +1534,10 @@ function LibraryDashboard() {
               body={space.body}
               image={space.image_url}
               onEdit={() =>
-                openEditModal("space", space)
+                openEditModal(
+                  "space",
+                  space
+                )
               }
               onDelete={() =>
                 deleteRecord(
@@ -1357,7 +1563,9 @@ function LibraryDashboard() {
       title="Library News"
       description="Manage library news and announcements."
       addLabel="Add News"
-      onAdd={() => openAddModal("news")}
+      onAdd={() =>
+        openAddModal("news")
+      }
     >
       <div className="library-content-list">
         {news.length === 0 ? (
@@ -1371,7 +1579,10 @@ function LibraryDashboard() {
               body={item.body}
               image={item.image_url}
               onEdit={() =>
-                openEditModal("news", item)
+                openEditModal(
+                  "news",
+                  item
+                )
               }
               onDelete={() =>
                 deleteRecord(
@@ -1397,7 +1608,9 @@ function LibraryDashboard() {
       title="Library Information"
       description="Manage library clubs and organizations."
       addLabel="Add Club"
-      onAdd={() => openAddModal("club")}
+      onAdd={() =>
+        openAddModal("club")
+      }
     >
       <div className="library-content-list">
         {clubs.length === 0 ? (
@@ -1422,12 +1635,17 @@ function LibraryDashboard() {
               <div className="library-list-content">
                 <h3>{club.name}</h3>
 
-                <p>{club.description}</p>
+                <p>
+                  {club.description}
+                </p>
               </div>
 
               <ActionButtons
                 onEdit={() =>
-                  openEditModal("club", club)
+                  openEditModal(
+                    "club",
+                    club
+                  )
                 }
                 onDelete={() =>
                   deleteRecord(
@@ -1454,7 +1672,9 @@ function LibraryDashboard() {
       title="Club News"
       description="Manage news and announcements from library clubs."
       addLabel="Add Club News"
-      onAdd={() => openAddModal("club-news")}
+      onAdd={() =>
+        openAddModal("club-news")
+      }
     >
       <div className="library-content-list">
         {clubNews.length === 0 ? (
@@ -1495,7 +1715,7 @@ function LibraryDashboard() {
   const renderRequests = () => (
     <ManagementSection
       title="Requests"
-      description="Review requests and assign responsibility to yourself."
+      description="Review Library requests and assign responsibility to yourself."
     >
       <RequestToolbar
         search={requestSearch}
@@ -1507,7 +1727,7 @@ function LibraryDashboard() {
 
       <RequestTable
         requests={filteredRequests}
-        emptyText="No active requests found."
+        emptyText="No active Library requests found."
         onView={setSelectedRequest}
       />
     </ManagementSection>
@@ -1520,7 +1740,7 @@ function LibraryDashboard() {
   const renderHistory = () => (
     <ManagementSection
       title="Request History"
-      description="View completed and cancelled requests."
+      description="View completed and cancelled Library requests."
     >
       <RequestToolbar
         search={historySearch}
@@ -1531,7 +1751,7 @@ function LibraryDashboard() {
 
       <RequestTable
         requests={filteredHistory}
-        emptyText="No request history found."
+        emptyText="No Library request history found."
         onView={setSelectedRequest}
         history
       />
@@ -1552,26 +1772,34 @@ function LibraryDashboard() {
         .limit(1)
         .maybeSingle();
 
-      if (existing.error) throw existing.error;
+      if (existing.error) {
+        throw existing.error;
+      }
 
       if (existing.data) {
-        const { error } = await supabase
-          .from("library_settings")
-          .update({
-            vision,
-            mission,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", existing.data.id);
+        const { error } =
+          await supabase
+            .from("library_settings")
+            .update({
+              vision,
+              mission,
+              updated_at:
+                new Date().toISOString(),
+            })
+            .eq(
+              "id",
+              existing.data.id
+            );
 
         if (error) throw error;
       } else {
-        const { error } = await supabase
-          .from("library_settings")
-          .insert({
-            vision,
-            mission,
-          });
+        const { error } =
+          await supabase
+            .from("library_settings")
+            .insert({
+              vision,
+              mission,
+            });
 
         if (error) throw error;
       }
@@ -1607,7 +1835,9 @@ function LibraryDashboard() {
             size={30}
           />
 
-          <p>Loading Library data...</p>
+          <p>
+            Loading Library data...
+          </p>
         </div>
       );
     }
@@ -1655,13 +1885,17 @@ function LibraryDashboard() {
         <button
           className="library-menu-button"
           onClick={() =>
-            setSidebarOpen(!sidebarOpen)
+            setSidebarOpen(
+              !sidebarOpen
+            )
           }
         >
           <Menu size={22} />
         </button>
 
-        <strong>Library Management</strong>
+        <strong>
+          Library Management
+        </strong>
       </div>
 
       {/* SIDEBAR */}
@@ -1679,8 +1913,13 @@ function LibraryDashboard() {
           </div>
 
           <div>
-            <strong>Library</strong>
-            <span>Management</span>
+            <strong>
+              Library
+            </strong>
+
+            <span>
+              Management
+            </span>
           </div>
         </div>
 
@@ -1703,12 +1942,17 @@ function LibraryDashboard() {
             >
               {item.icon}
 
-              <span>{item.label}</span>
+              <span>
+                {item.label}
+              </span>
 
               {item.id === "requests" &&
-                pendingRequests.length > 0 && (
+                pendingRequests.length >
+                  0 && (
                   <b>
-                    {pendingRequests.length}
+                    {
+                      pendingRequests.length
+                    }
                   </b>
                 )}
             </button>
@@ -1721,8 +1965,13 @@ function LibraryDashboard() {
           </div>
 
           <div>
-            <strong>{getStaffName()}</strong>
-            <span>Staff</span>
+            <strong>
+              {getStaffName()}
+            </strong>
+
+            <span>
+              Staff
+            </span>
           </div>
         </div>
 
@@ -1777,10 +2026,14 @@ function LibraryDashboard() {
             )
           }
           onComplete={() =>
-            completeRequest(selectedRequest)
+            completeRequest(
+              selectedRequest
+            )
           }
           onCancel={() =>
-            cancelRequest(selectedRequest)
+            cancelRequest(
+              selectedRequest
+            )
           }
         />
       )}
@@ -1828,6 +2081,7 @@ function StatCard({
 
       <div>
         <span>{title}</span>
+
         <strong>{value}</strong>
       </div>
     </button>
@@ -1860,6 +2114,7 @@ function ManagementSection({
             onClick={onAdd}
           >
             <Plus size={18} />
+
             {addLabel}
           </button>
         )}
@@ -1982,7 +2237,8 @@ function RequestRow({
     <tr>
       <td>
         <strong>
-          {request.requester_name || "Unknown"}
+          {request.requester_name ||
+            "Unknown"}
         </strong>
       </td>
 
@@ -2012,7 +2268,9 @@ function RequestRow({
             </div>
 
             <span>
-              {request.assigned_staff_name}
+              {
+                request.assigned_staff_name
+              }
             </span>
           </div>
         ) : (
@@ -2025,9 +2283,12 @@ function RequestRow({
       <td>
         <button
           className="library-view-button"
-          onClick={() => onView(request)}
+          onClick={() =>
+            onView(request)
+          }
         >
           <Eye size={16} />
+
           View Details
         </button>
       </td>
@@ -2062,7 +2323,9 @@ function RequestDetailsModal({
     <div
       className="library-modal-overlay"
       onMouseDown={(e) => {
-        if (e.target === e.currentTarget) {
+        if (
+          e.target === e.currentTarget
+        ) {
           onClose();
         }
       }}
@@ -2152,7 +2415,9 @@ function RequestDetailsModal({
           </div>
 
           <div className="library-request-description">
-            <label>Request Details</label>
+            <label>
+              Request Details
+            </label>
 
             <div>
               {request.details ||
@@ -2172,12 +2437,16 @@ function RequestDetailsModal({
                 </strong>
 
                 <p>
-                  {request.assigned_staff_name}
+                  {
+                    request.assigned_staff_name
+                  }
                 </p>
 
                 {request.assigned_staff_email && (
                   <span>
-                    {request.assigned_staff_email}
+                    {
+                      request.assigned_staff_email
+                    }
                   </span>
                 )}
               </div>
@@ -2191,13 +2460,15 @@ function RequestDetailsModal({
 
                 <div>
                   <strong>
-                    This request is unassigned.
+                    This request is
+                    unassigned.
                   </strong>
 
                   <p>
-                    Click "Accept & Assign to Me"
-                    if you will be responsible
-                    for this request.
+                    Click "Accept & Assign
+                    to Me" if you will be
+                    responsible for this
+                    request.
                   </p>
                 </div>
               </div>
@@ -2221,38 +2492,45 @@ function RequestDetailsModal({
                 onClick={onAssign}
               >
                 <UserCheck size={17} />
+
                 Accept & Assign to Me
               </button>
             )}
 
-          {isAccepted && isAssigned && (
-            <>
-              <button
-                className="library-danger-button"
-                onClick={onCancel}
-              >
-                <X size={17} />
-                Cancel Request
-              </button>
+          {isAccepted &&
+            isAssigned && (
+              <>
+                <button
+                  className="library-danger-button"
+                  onClick={onCancel}
+                >
+                  <X size={17} />
 
-              <button
-                className="library-success-button"
-                onClick={onComplete}
-              >
-                <CircleCheck size={17} />
-                Mark Completed
-              </button>
-            </>
-          )}
+                  Cancel Request
+                </button>
 
-          {isAccepted && !isAssigned && (
-            <div className="library-not-responsible">
-              Assigned to{" "}
-              <strong>
-                {request.assigned_staff_name}
-              </strong>
-            </div>
-          )}
+                <button
+                  className="library-success-button"
+                  onClick={onComplete}
+                >
+                  <CircleCheck size={17} />
+
+                  Mark Completed
+                </button>
+              </>
+            )}
+
+          {isAccepted &&
+            !isAssigned && (
+              <div className="library-not-responsible">
+                Assigned to{" "}
+                <strong>
+                  {
+                    request.assigned_staff_name
+                  }
+                </strong>
+              </div>
+            )}
 
         </div>
       </div>
@@ -2329,7 +2607,9 @@ function ContentModal({
     <div
       className="library-modal-overlay"
       onMouseDown={(e) => {
-        if (e.target === e.currentTarget) {
+        if (
+          e.target === e.currentTarget
+        ) {
           onClose();
         }
       }}
@@ -2389,7 +2669,9 @@ function ContentModal({
 
               <div className="library-form-row">
                 <div className="library-form-group">
-                  <label>Opening Time</label>
+                  <label>
+                    Opening Time
+                  </label>
 
                   <input
                     type="time"
@@ -2401,7 +2683,9 @@ function ContentModal({
                 </div>
 
                 <div className="library-form-group">
-                  <label>Closing Time</label>
+                  <label>
+                    Closing Time
+                  </label>
 
                   <input
                     type="time"
@@ -2422,7 +2706,9 @@ function ContentModal({
                   {form.existingImage &&
                   !form.image ? (
                     <img
-                      src={form.existingImage}
+                      src={
+                        form.existingImage
+                      }
                       alt="Current"
                       className="library-upload-preview"
                     />
@@ -2437,7 +2723,8 @@ function ContentModal({
                       </strong>
 
                       <span>
-                        PNG, JPG or WEBP — Max 5MB
+                        PNG, JPG or WEBP —
+                        Max 5MB
                       </span>
                     </div>
                   )}
@@ -2445,7 +2732,9 @@ function ContentModal({
                   <input
                     type="file"
                     accept="image/png,image/jpeg,image/webp"
-                    onChange={onImageChange}
+                    onChange={
+                      onImageChange
+                    }
                     hidden
                   />
                 </label>
@@ -2454,7 +2743,9 @@ function ContentModal({
               {isClub ? (
                 <>
                   <div className="library-form-group">
-                    <label>Club Name</label>
+                    <label>
+                      Club Name
+                    </label>
 
                     <input
                       type="text"
@@ -2467,11 +2758,15 @@ function ContentModal({
                   </div>
 
                   <div className="library-form-group">
-                    <label>Description</label>
+                    <label>
+                      Description
+                    </label>
 
                     <textarea
                       name="description"
-                      value={form.description}
+                      value={
+                        form.description
+                      }
                       onChange={onChange}
                       placeholder="Enter club description"
                       rows={6}
@@ -2546,6 +2841,7 @@ function ContentModal({
                     size={17}
                     className="spin"
                   />
+
                   Saving...
                 </>
               ) : (
@@ -2713,12 +3009,19 @@ function LibraryAlert() {
       </div>
 
       <div className="library-alert-content">
-        <strong>{alert.title}</strong>
-        <p>{alert.message}</p>
+        <strong>
+          {alert.title}
+        </strong>
+
+        <p>
+          {alert.message}
+        </p>
       </div>
 
       <button
-        onClick={() => setAlert(null)}
+        onClick={() =>
+          setAlert(null)
+        }
         className="library-alert-close"
       >
         <X size={16} />
