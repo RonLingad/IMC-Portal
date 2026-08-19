@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../services/supabase";
 import "./Library.css";
+import slideshowVideo from "../assets/slideshow.mp4";
 
 function Library() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -316,11 +317,11 @@ function Library() {
             className="brand"
             onClick={closeMenu}
           >
-<img
-  src="/hfalogo.png"
-  alt="Instructional Media Center Logo"
-  className="brand-logo"
-/>
+            <img
+              src="/hfalogo.png"
+              alt="Instructional Media Center Logo"
+              className="brand-logo"
+            />
 
             <div className="brand-text">
               <span className="brand-name">
@@ -333,7 +334,7 @@ function Library() {
             </div>
           </a>
 
-          {/* DESKTOP NAV */}
+          {/* DESKTOP NAVIGATION */}
 
           <nav className="main-navigation">
 
@@ -348,6 +349,8 @@ function Library() {
             <a href="/#announcements" onClick={closeMenu}>
               Announcements
             </a>
+
+            {/* SERVICES */}
 
             <div className="nav-dropdown">
 
@@ -405,85 +408,80 @@ function Library() {
               </div>
             </div>
 
-            <a href="/#facilities">
+            <a href="/#facilities" onClick={closeMenu}>
               Facilities
             </a>
 
-            <a href="/#about">
+            <a href="/#about" onClick={closeMenu}>
               About
             </a>
 
+            {/* QUICK LINKS */}
+
             <div className="nav-dropdown quick-links-dropdown">
 
-            <button
-              type="button"
-              className="nav-dropdown-button"
-            >
-              Quick Links
-              <span className="dropdown-arrow">
-                ▾
-              </span>
-            </button>
-
-            <div className="nav-dropdown-menu">
-
-              {/* ARALINKS */}
-
-              <a
-                href="https://hfapgs.aralinks.net:8080/login/index.php?loginredirect=1"
-                className="nav-dropdown-item"
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                type="button"
+                className="nav-dropdown-button"
               >
-                <span className="dropdown-item-title">
-                  Aralinks
+                Quick Links
+
+                <span className="dropdown-arrow">
+                  ▾
                 </span>
+              </button>
 
-                <span className="dropdown-item-description">
-                  Digital learning resources
-                </span>
-              </a>
+              <div className="nav-dropdown-menu">
 
+                <a
+                  href="https://hfapgs.aralinks.net:8080/login/index.php?loginredirect=1"
+                  className="nav-dropdown-item"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <span className="dropdown-item-title">
+                    Aralinks
+                  </span>
 
-              {/* FOLLETT DESTINY */}
+                  <span className="dropdown-item-description">
+                    Digital learning resources
+                  </span>
+                </a>
 
-              <a
-                href="https://hfa-library.follettdestiny.com/portal/portal?app=Library%20Manager&appId=destiny-DFXG-DKVF&siteGuid=6FCE2EC2-064B-4961-BE56-2AF87CAD9632&nav=%252Fcataloging%252Fservlet%252Fpresentadvancedsearchredirectorform.do%253Fl2m%253DLibrary%252520Search%2526tm%253DTopLevelCatalog%2526l2m%253DLibrary%252BSearch"
-                className="nav-dropdown-item"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <span className="dropdown-item-title">
-                  Follett Destiny
-                </span>
+                <a
+                  href="https://hfa-library.follettdestiny.com/portal/portal?app=Library%20Manager&appId=destiny-DFXG-DKVF&siteGuid=6FCE2EC2-064B-4961-BE56-2AF87CAD9632&nav=%252Fcataloging%252Fservlet%252Fpresentadvancedsearchredirectorform.do%253Fl2m%253DLibrary%252520Search%2526tm%253DTopLevelCatalog%2526l2m%253DLibrary%252BSearch"
+                  className="nav-dropdown-item"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <span className="dropdown-item-title">
+                    Follett Destiny
+                  </span>
 
-                <span className="dropdown-item-description">
-                  Library catalog and resources
-                </span>
-              </a>
+                  <span className="dropdown-item-description">
+                    Library catalog and resources
+                  </span>
+                </a>
 
+                <a
+                  href="https://www.getepic.com/"
+                  className="nav-dropdown-item"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <span className="dropdown-item-title">
+                    Epic Reading
+                  </span>
 
-              {/* EPIC READING */}
+                  <span className="dropdown-item-description">
+                    Digital reading platform
+                  </span>
+                </a>
 
-              <a
-                href="https://www.getepic.com/"
-                className="nav-dropdown-item"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <span className="dropdown-item-title">
-                  Epic Reading
-                </span>
-
-                <span className="dropdown-item-description">
-                  Digital reading platform
-                </span>
-              </a>
-
+              </div>
             </div>
-          </div>
 
-            <a href="/staff">
+            <a href="/staff" onClick={closeMenu}>
               Staff
             </a>
 
@@ -507,6 +505,7 @@ function Library() {
               }`}
               onClick={() => setMenuOpen(!menuOpen)}
               aria-label="Toggle navigation menu"
+              aria-expanded={menuOpen}
             >
               <span></span>
               <span></span>
@@ -521,9 +520,7 @@ function Library() {
 
         <nav
           className={`mobile-navigation ${
-            menuOpen
-              ? "mobile-navigation-open"
-              : ""
+            menuOpen ? "mobile-navigation-open" : ""
           }`}
         >
 
@@ -585,21 +582,42 @@ function Library() {
               Quick Links
             </span>
 
-            <a href="#" className="mobile-sub-link">
+            <a
+              href="https://hfapgs.aralinks.net:8080/login/index.php?loginredirect=1"
+              className="mobile-sub-link"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={closeMenu}
+            >
               Aralinks
             </a>
 
-            <a href="#" className="mobile-sub-link">
+            <a
+              href="https://hfa-library.follettdestiny.com/portal/portal?app=Library%20Manager&appId=destiny-DFXG-DKVF&siteGuid=6FCE2EC2-064B-4961-BE56-2AF87CAD9632&nav=%252Fcataloging%252Fservlet%252Fpresentadvancedsearchredirectorform.do%253Fl2m%253DLibrary%252520Search%2526tm%253DTopLevelCatalog%2526l2m%253DLibrary%252BSearch"
+              className="mobile-sub-link"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={closeMenu}
+            >
               Follett Destiny
             </a>
 
-            <a href="#" className="mobile-sub-link">
+            <a
+              href="https://www.getepic.com/"
+              className="mobile-sub-link"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={closeMenu}
+            >
               Epic Reading
             </a>
 
           </div>
 
-          <a href="/staff" onClick={closeMenu}>
+          <a
+            href="/staff"
+            onClick={closeMenu}
+          >
             Staff
           </a>
 
@@ -636,14 +654,38 @@ function Library() {
       </div>
 
       {/* =====================================================
-          HERO
+          HERO / FIRST PANE
+          VIDEO BACKGROUND
       ===================================================== */}
 
       <main>
 
         <section className="library-hero">
 
+          {/* BACKGROUND VIDEO */}
+
+          <video
+            className="library-hero-video"
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+            aria-hidden="true"
+          >
+            <source
+              src={slideshowVideo}
+              type="video/mp4"
+            />
+          </video>
+
+          {/* VIDEO OVERLAY */}
+
+          <div className="library-hero-overlay"></div>
+
           <div className="container library-hero-container">
+
+            {/* HERO CONTENT */}
 
             <div className="library-hero-content">
 
@@ -725,13 +767,9 @@ function Library() {
                       </strong>
 
                       <span>
-                        {formatTime(
-                          schedule.opening_time
-                        )}
+                        {formatTime(schedule.opening_time)}
                         {" — "}
-                        {formatTime(
-                          schedule.closing_time
-                        )}
+                        {formatTime(schedule.closing_time)}
                       </span>
 
                     </div>
@@ -762,52 +800,28 @@ function Library() {
 
           <div className="library-marquee-track">
 
-            <span>
-              LIBRARY RESOURCES
-            </span>
-
+            <span>LIBRARY RESOURCES</span>
             <i>✦</i>
 
-            <span>
-              RESEARCH SUPPORT
-            </span>
-
+            <span>RESEARCH SUPPORT</span>
             <i>✦</i>
 
-            <span>
-              LEARNING SPACES
-            </span>
-
+            <span>LEARNING SPACES</span>
             <i>✦</i>
 
-            <span>
-              READING & DISCOVERY
-            </span>
-
+            <span>READING & DISCOVERY</span>
             <i>✦</i>
 
-            <span>
-              LIBRARY COMMUNITY
-            </span>
-
+            <span>LIBRARY COMMUNITY</span>
             <i>✦</i>
 
-            <span>
-              LIBRARY RESOURCES
-            </span>
-
+            <span>LIBRARY RESOURCES</span>
             <i>✦</i>
 
-            <span>
-              RESEARCH SUPPORT
-            </span>
-
+            <span>RESEARCH SUPPORT</span>
             <i>✦</i>
 
-            <span>
-              LEARNING SPACES
-            </span>
-
+            <span>LEARNING SPACES</span>
             <i>✦</i>
 
           </div>
@@ -904,7 +918,6 @@ function Library() {
 
         {/* =====================================================
             CLUB NEWS
-            KEPT
         ===================================================== */}
 
         <section
@@ -993,7 +1006,6 @@ function Library() {
 
         {/* =====================================================
             LIBRARY INFORMATION
-            CHANGED FROM LIBRARY CLUBS
         ===================================================== */}
 
         <section
@@ -1379,8 +1391,14 @@ function SectionHeading({
 function ReadMore() {
   const handleReadMore = (event) => {
     const button = event.currentTarget;
-    const cardContent = button.closest(".library-card-content, .library-club-content");
-    const text = cardContent?.querySelector(".library-card-text");
+
+    const cardContent = button.closest(
+      ".library-card-content, .library-club-content"
+    );
+
+    const text = cardContent?.querySelector(
+      ".library-card-text"
+    );
 
     if (!text) return;
 
