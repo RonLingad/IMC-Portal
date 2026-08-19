@@ -1,20 +1,26 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../services/supabase";
 import "./AdminControl.css";
 
 function AdminControl() {
-  const [activeTab, setActiveTab] = useState("users");
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState({ text: "", type: "" });
-
   const navigate = useNavigate();
 
-  // =========================================================
-  // 1. USER MANAGEMENT
-  // =========================================================
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const [loading, setLoading] = useState(false);
+
+  const [message, setMessage] = useState({
+    text: "",
+    type: "",
+  });
+
+  /* =========================================================
+     USER MANAGEMENT
+  ========================================================= */
 
   const [users, setUsers] = useState([]);
+
+  const [userSearch, setUserSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
 
   const [userForm, setUserForm] = useState({
@@ -26,9 +32,19 @@ function AdminControl() {
 
   const [isEditingUser, setIsEditingUser] = useState(false);
 
-  // =========================================================
-  // 2. ACTIVITIES
-  // =========================================================
+  /* =========================================================
+     REQUEST RECORDS
+  ========================================================= */
+
+  const [requests, setRequests] = useState([]);
+
+  const [requestSearch, setRequestSearch] = useState("");
+  const [requestTypeFilter, setRequestTypeFilter] = useState("all");
+  const [requestStatusFilter, setRequestStatusFilter] = useState("all");
+
+  /* =========================================================
+     ACTIVITIES
+  ========================================================= */
 
   const [activities, setActivities] = useState([]);
 
@@ -41,9 +57,9 @@ function AdminControl() {
 
   const [activityFile, setActivityFile] = useState(null);
 
-  // =========================================================
-  // 3. ANNOUNCEMENTS
-  // =========================================================
+  /* =========================================================
+     ANNOUNCEMENTS
+  ========================================================= */
 
   const [announcements, setAnnouncements] = useState([]);
 
@@ -55,9 +71,9 @@ function AdminControl() {
     description: "",
   });
 
-  // =========================================================
-  // 4. FACILITIES
-  // =========================================================
+  /* =========================================================
+     FACILITIES
+  ========================================================= */
 
   const [facilities, setFacilities] = useState([]);
 
@@ -69,18 +85,19 @@ function AdminControl() {
 
   const [facilityFile, setFacilityFile] = useState(null);
 
-  // =========================================================
-  // 5. VISION & MISSION
-  // =========================================================
+  /* =========================================================
+     VISION & MISSION
+  ========================================================= */
 
   const [visionMission, setVisionMission] = useState({
+    id: null,
     vision: "",
     mission: "",
   });
 
-  // =========================================================
-  // 6. STAFF MANAGEMENT
-  // =========================================================
+  /* =========================================================
+     STAFF
+  ========================================================= */
 
   const [staff, setStaff] = useState([]);
 
@@ -94,165 +111,108 @@ function AdminControl() {
   const [staffFile, setStaffFile] = useState(null);
   const [isEditingStaff, setIsEditingStaff] = useState(false);
 
-  // =========================================================
-  // LOAD DATA
-  // =========================================================
+  /* =========================================================
+     INITIAL LOAD
+  ========================================================= */
 
   useEffect(() => {
-    fetchData();
+    fetchUsers();
+    fetchRequests();
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "users" || activeTab === "user-list") {
+      fetchUsers();
+    }
+
+    if (activeTab === "requests" || activeTab === "dashboard") {
+      fetchRequests();
+    }
+
+    if (activeTab === "activities") {
+      fetchActivities();
+    }
+
+    if (activeTab === "announcements") {
+      fetchAnnouncements();
+    }
+
+    if (activeTab === "facilities") {
+      fetchFacilities();
+    }
+
+    if (activeTab === "staff") {
+      fetchStaff();
+    }
+
+    if (activeTab === "vision") {
+      fetchVisionMission();
+    }
   }, [activeTab]);
 
-  // =========================================================
-  // LOGOUT
-  // =========================================================
+  /* =========================================================
+     MESSAGE
+  ========================================================= */
+
+  const showMessage = (text, type = "success") => {
+    setMessage({
+      text,
+      type,
+    });
+
+    setTimeout(() => {
+      setMessage({
+        text: "",
+        type: "",
+      });
+    }, 4000);
+  };
+
+  /* =========================================================
+     LOGOUT
+  ========================================================= */
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/login");
   };
 
-  // =========================================================
-  // FETCH DATA
-  // =========================================================
+  /* =========================================================
+     USERS
+  ========================================================= */
 
-  const fetchData = async () => {
-    setLoading(true);
-
+  const fetchUsers = async () => {
     try {
-      if (activeTab === "users") {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("*")
-          .order("email", { ascending: true });
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .order("email", {
+          ascending: true,
+        });
 
-        if (error) throw error;
+      if (error) throw error;
 
-        setUsers(data || []);
-      }
+      setUsers(data || []);
+    } catch (error) {
+      console.error("Fetch users error:", error);
 
-      // -------------------------------------------------------
-      // ACTIVITIES
-      // -------------------------------------------------------
-
-      else if (activeTab === "activities") {
-        const { data, error } = await supabase
-          .from("activities")
-          .select("*")
-          .order("id", { ascending: false });
-
-        if (error) throw error;
-
-        setActivities(data || []);
-      }
-
-      // -------------------------------------------------------
-      // ANNOUNCEMENTS
-      // -------------------------------------------------------
-
-      else if (activeTab === "announcements") {
-        const { data, error } = await supabase
-          .from("announcements")
-          .select("*")
-          .order("id", { ascending: false });
-
-        if (error) throw error;
-
-        setAnnouncements(data || []);
-      }
-
-      // -------------------------------------------------------
-      // FACILITIES
-      // -------------------------------------------------------
-
-      else if (activeTab === "facilities") {
-        const { data, error } = await supabase
-          .from("facilities")
-          .select("*")
-          .order("id", { ascending: false });
-
-        if (error) throw error;
-
-        setFacilities(data || []);
-      }
-
-      // -------------------------------------------------------
-      // VISION & MISSION
-      // -------------------------------------------------------
-
-      else if (activeTab === "vision") {
-        const { data, error } = await supabase
-          .from("vision_mission")
-          .select("*")
-          .single();
-
-        if (error && error.code !== "PGRST116") {
-          throw error;
-        }
-
-        if (data) {
-          setVisionMission(data);
-        }
-      }
-
-      // -------------------------------------------------------
-      // STAFF
-      // -------------------------------------------------------
-
-      else if (activeTab === "staff") {
-        const { data, error } = await supabase
-          .from("staff")
-          .select("*")
-          .order("id", { ascending: false });
-
-        if (error) throw error;
-
-        setStaff(data || []);
-      }
-    } catch (err) {
-      console.error("Error fetching data:", err.message);
-
-      setMessage({
-        text: err.message,
-        type: "error",
-      });
-    } finally {
-      setLoading(false);
+      showMessage(
+        error.message || "Unable to load users.",
+        "error"
+      );
     }
   };
 
-  // =========================================================
-  // IMAGE UPLOAD
-  // =========================================================
+  const resetUserForm = () => {
+    setUserForm({
+      id: null,
+      email: "",
+      password: "",
+      role: "librarystaff",
+    });
 
-  const uploadImageFile = async (file, bucket = "images") => {
-    if (!file) return null;
-
-    const fileExt = file.name.split(".").pop();
-
-    const fileName = `${Date.now()}-${Math.random()
-      .toString(36)
-      .substring(2, 9)}.${fileExt}`;
-
-    const filePath = fileName;
-
-    const { error: uploadError } = await supabase.storage
-      .from(bucket)
-      .upload(filePath, file);
-
-    if (uploadError) {
-      throw uploadError;
-    }
-
-    const { data } = supabase.storage
-      .from(bucket)
-      .getPublicUrl(filePath);
-
-    return data.publicUrl;
+    setIsEditingUser(false);
   };
-
-  // =========================================================
-  // 1. USER MANAGEMENT
-  // =========================================================
 
   const handleSaveUser = async (e) => {
     e.preventDefault();
@@ -260,125 +220,466 @@ function AdminControl() {
     setLoading(true);
 
     try {
-      if (isEditingUser) {
-        const updatePayload = {
-          role: userForm.role,
-          email: userForm.email,
-        };
-
-        const { error: profileError } = await supabase
-          .from("profiles")
-          .update(updatePayload)
-          .eq("id", userForm.id);
-
-        if (profileError) throw profileError;
-
-        setMessage({
-          text: "User account updated successfully!",
-          type: "success",
-        });
-      } else {
-        const { data: authData, error: authError } =
-          await supabase.auth.signUp({
-            email: userForm.email,
-            password: userForm.password,
-          });
-
-        if (authError) throw authError;
-
-        const userId = authData.user?.id;
-
-        if (userId) {
-          const { error: profileError } = await supabase
-            .from("profiles")
-            .upsert([
-              {
-                id: userId,
-                email: userForm.email,
-                role: userForm.role,
-              },
-            ]);
-
-          if (profileError) throw profileError;
-        }
-
-        setMessage({
-          text: "User account created successfully!",
-          type: "success",
-        });
+      if (!userForm.email.trim()) {
+        throw new Error("Email address is required.");
       }
 
-      setUserForm({
-        id: null,
-        email: "",
-        password: "",
-        role: "librarystaff",
+      /* =====================================================
+         UPDATE EXISTING USER
+      ===================================================== */
+
+      if (isEditingUser) {
+        const existingUser = users.find(
+          (user) => user.id === userForm.id
+        );
+
+        if (existingUser?.role === "admin") {
+          throw new Error(
+            "Administrator accounts cannot be edited."
+          );
+        }
+
+        const { error } = await supabase
+          .from("profiles")
+          .update({
+            email: userForm.email.trim(),
+            role: userForm.role,
+          })
+          .eq("id", userForm.id);
+
+        if (error) throw error;
+
+        showMessage(
+          "User information updated successfully."
+        );
+
+        resetUserForm();
+
+        await fetchUsers();
+
+        setActiveTab("user-list");
+
+        return;
+      }
+
+      /* =====================================================
+         CREATE NEW USER
+      ===================================================== */
+
+      if (!userForm.password) {
+        throw new Error(
+          "A password is required when creating an Auth account."
+        );
+      }
+
+      const {
+        data: authData,
+        error: authError,
+      } = await supabase.auth.signUp({
+        email: userForm.email.trim(),
+        password: userForm.password,
       });
 
-      setIsEditingUser(false);
+      if (authError) throw authError;
 
-      fetchData();
-    } catch (err) {
-      setMessage({
-        text: err.message,
-        type: "error",
-      });
+      const userId = authData?.user?.id;
+
+      if (!userId) {
+        throw new Error(
+          "Account was not created. Supabase did not return a user ID."
+        );
+      }
+
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .upsert([
+          {
+            id: userId,
+            email: userForm.email.trim(),
+            role: userForm.role,
+          },
+        ]);
+
+      if (profileError) throw profileError;
+
+      showMessage(
+        "User account created successfully."
+      );
+
+      resetUserForm();
+
+      await fetchUsers();
+
+      setActiveTab("user-list");
+    } catch (error) {
+      console.error("User save error:", error);
+
+      showMessage(
+        error.message || "Unable to save user.",
+        "error"
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  const handleEditUser = (usr) => {
+  const handleEditUser = (user) => {
+    if (user.role === "admin") {
+      showMessage(
+        "Administrator accounts cannot be edited.",
+        "error"
+      );
+
+      return;
+    }
+
     setUserForm({
-      id: usr.id,
-      email: usr.email,
+      id: user.id,
+      email: user.email || "",
       password: "",
-      role: usr.role,
+      role: user.role || "librarystaff",
     });
 
     setIsEditingUser(true);
+
+    setActiveTab("users");
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
   };
 
-  const handleDeleteUser = async (id) => {
-    if (
-      !window.confirm(
-        "Are you sure you want to delete this user account?"
-      )
-    ) {
+  const handleDeleteUser = async (user) => {
+    if (user.role === "admin") {
+      showMessage(
+        "Administrator accounts cannot be deleted.",
+        "error"
+      );
+
       return;
     }
+
+    const confirmed = window.confirm(
+      `Are you sure you want to delete ${user.email}?`
+    );
+
+    if (!confirmed) return;
+
+    setLoading(true);
 
     try {
       const { error } = await supabase
         .from("profiles")
         .delete()
-        .eq("id", id);
+        .eq("id", user.id);
 
       if (error) throw error;
 
-      setMessage({
-        text: "User deleted successfully.",
-        type: "success",
-      });
+      showMessage(
+        "User profile deleted successfully."
+      );
 
-      fetchData();
-    } catch (err) {
-      setMessage({
-        text: err.message,
-        type: "error",
-      });
+      await fetchUsers();
+    } catch (error) {
+      console.error("Delete user error:", error);
+
+      showMessage(
+        error.message || "Unable to delete user.",
+        "error"
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
-  const filteredUsers = users.filter((u) => {
-    if (roleFilter === "all") return true;
+  const filteredUsers = useMemo(() => {
+    return users.filter((user) => {
+      const search = userSearch.toLowerCase();
 
-    return u.role === roleFilter;
-  });
+      const matchesSearch =
+        !search ||
+        user.email
+          ?.toLowerCase()
+          .includes(search);
 
-  // =========================================================
-  // 2. ACTIVITIES
-  // =========================================================
+      const matchesRole =
+        roleFilter === "all" ||
+        user.role === roleFilter;
+
+      return matchesSearch && matchesRole;
+    });
+  }, [users, userSearch, roleFilter]);
+
+  /* =========================================================
+     REQUEST RECORDS
+
+     IMPORTANT:
+     Your Supabase schema shows:
+
+     library_requests
+     - id
+     - requester_name
+     - requester_email
+     - request_type
+     - details
+     - request_date
+     - status
+     - created_at
+     - updated_at
+     - assigned_staff_id
+
+     Therefore we fetch library_requests instead of requests.
+  ========================================================= */
+
+  const fetchRequests = async () => {
+    try {
+      console.log("Fetching ALL library requests...");
+
+      const { data, error } = await supabase
+        .from("library_requests")
+        .select(`
+          id,
+          requester_name,
+          requester_email,
+          request_type,
+          details,
+          request_date,
+          status,
+          created_at,
+          updated_at,
+          assigned_staff_id
+        `)
+        .order("request_date", {
+          ascending: false,
+        });
+
+      if (error) {
+        console.error(
+          "Supabase library_requests error:",
+          error
+        );
+
+        throw error;
+      }
+
+      console.log(
+        "Library requests fetched:",
+        data
+      );
+
+      /*
+       * IMPORTANT:
+       * Do NOT filter by status here.
+       *
+       * This means Pending, Assigned,
+       * Completed, Cancelled, etc.
+       * will ALL be fetched.
+       */
+      setRequests(data || []);
+    } catch (error) {
+      console.error(
+        "Fetch library requests error:",
+        error
+      );
+
+      setRequests([]);
+
+      showMessage(
+        error.message ||
+          "Unable to load library request records.",
+        "error"
+      );
+    }
+  };
+
+  /* =========================================================
+     REQUEST FILTERING
+  ========================================================= */
+
+  const filteredRequests = useMemo(() => {
+    return requests.filter((request) => {
+      const search =
+        requestSearch.trim().toLowerCase();
+
+      const requesterName =
+        request.requester_name
+          ?.toLowerCase() || "";
+
+      const requesterEmail =
+        request.requester_email
+          ?.toLowerCase() || "";
+
+      const assignedStaff =
+        request.assigned_staff_id
+          ?.toLowerCase() || "";
+
+      const requestDetails =
+        request.details
+          ?.toLowerCase() || "";
+
+      const matchesSearch =
+        !search ||
+        requesterName.includes(search) ||
+        requesterEmail.includes(search) ||
+        assignedStaff.includes(search) ||
+        requestDetails.includes(search);
+
+      const requestType =
+        request.request_type
+          ?.toLowerCase()
+          .trim();
+
+      const matchesType =
+        requestTypeFilter === "all" ||
+        requestType ===
+          requestTypeFilter.toLowerCase();
+
+      const requestStatus =
+        request.status
+          ?.toLowerCase()
+          .trim();
+
+      const matchesStatus =
+        requestStatusFilter === "all" ||
+        requestStatus ===
+          requestStatusFilter.toLowerCase();
+
+      return (
+        matchesSearch &&
+        matchesType &&
+        matchesStatus
+      );
+    });
+  }, [
+    requests,
+    requestSearch,
+    requestTypeFilter,
+    requestStatusFilter,
+  ]);
+
+  /* =========================================================
+     REQUEST ANALYTICS
+  ========================================================= */
+
+  const requestAnalytics = useMemo(() => {
+    const total = requests.length;
+
+    const pending = requests.filter(
+      (item) =>
+        item.status
+          ?.toLowerCase()
+          .trim() === "pending"
+    ).length;
+
+    const assigned = requests.filter(
+      (item) =>
+        item.status
+          ?.toLowerCase()
+          .trim() === "assigned"
+    ).length;
+
+    const completed = requests.filter(
+      (item) =>
+        item.status
+          ?.toLowerCase()
+          .trim() === "completed"
+    ).length;
+
+    const cancelled = requests.filter(
+      (item) =>
+        item.status
+          ?.toLowerCase()
+          .trim() === "cancelled"
+    ).length;
+
+    const library = requests.filter(
+      (item) =>
+        item.request_type
+          ?.toLowerCase()
+          .includes("library")
+    ).length;
+
+    const avr = requests.filter(
+      (item) =>
+        item.request_type
+          ?.toLowerCase()
+          .includes("avr")
+    ).length;
+
+    return {
+      total,
+      pending,
+      assigned,
+      completed,
+      cancelled,
+      library,
+      avr,
+    };
+  }, [requests]);
+
+  /* =========================================================
+     IMAGE UPLOAD
+  ========================================================= */
+
+  const uploadImageFile = async (
+    file,
+    bucket = "images"
+  ) => {
+    if (!file) return null;
+
+    const fileExt =
+      file.name.split(".").pop();
+
+    const fileName = `${Date.now()}-${Math.random()
+      .toString(36)
+      .substring(2, 9)}.${fileExt}`;
+
+    const { error: uploadError } =
+      await supabase.storage
+        .from(bucket)
+        .upload(fileName, file);
+
+    if (uploadError) {
+      throw uploadError;
+    }
+
+    const { data } =
+      supabase.storage
+        .from(bucket)
+        .getPublicUrl(fileName);
+
+    return data.publicUrl;
+  };
+
+  /* =========================================================
+     ACTIVITIES
+  ========================================================= */
+
+  const fetchActivities = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("activities")
+        .select("*")
+        .order("id", {
+          ascending: false,
+        });
+
+      if (error) throw error;
+
+      setActivities(data || []);
+    } catch (error) {
+      console.error(
+        "Fetch activities error:",
+        error
+      );
+
+      showMessage(
+        error.message,
+        "error"
+      );
+    }
+  };
 
   const handleSaveActivity = async (e) => {
     e.preventDefault();
@@ -386,27 +687,36 @@ function AdminControl() {
     setLoading(true);
 
     try {
-      let imageUrl = activityForm.image;
+      let imageUrl =
+        activityForm.image;
 
       if (activityFile) {
-        imageUrl = await uploadImageFile(activityFile);
+        imageUrl =
+          await uploadImageFile(
+            activityFile
+          );
       }
 
-      const { error } = await supabase
-        .from("activities")
-        .insert([
-          {
-            ...activityForm,
-            image: imageUrl,
-          },
-        ]);
+      const { error } =
+        await supabase
+          .from("activities")
+          .insert([
+            {
+              title:
+                activityForm.title,
+              date:
+                activityForm.date,
+              description:
+                activityForm.description,
+              image: imageUrl,
+            },
+          ]);
 
       if (error) throw error;
 
-      setMessage({
-        text: "Activity posted successfully!",
-        type: "success",
-      });
+      showMessage(
+        "Activity posted successfully."
+      );
 
       setActivityForm({
         title: "",
@@ -417,12 +727,12 @@ function AdminControl() {
 
       setActivityFile(null);
 
-      fetchData();
-    } catch (err) {
-      setMessage({
-        text: err.message,
-        type: "error",
-      });
+      await fetchActivities();
+    } catch (error) {
+      showMessage(
+        error.message,
+        "error"
+      );
     } finally {
       setLoading(false);
     }
@@ -431,222 +741,266 @@ function AdminControl() {
   const handleDeleteActivity = async (id) => {
     if (
       !window.confirm(
-        "Are you sure you want to remove this activity?"
+        "Remove this activity?"
       )
     ) {
       return;
     }
 
     try {
-      const { error } = await supabase
-        .from("activities")
-        .delete()
-        .eq("id", id);
+      const { error } =
+        await supabase
+          .from("activities")
+          .delete()
+          .eq("id", id);
 
       if (error) throw error;
 
-      setMessage({
-        text: "Activity removed.",
-        type: "success",
-      });
+      showMessage(
+        "Activity removed."
+      );
 
-      fetchData();
-    } catch (err) {
-      setMessage({
-        text: err.message,
-        type: "error",
-      });
+      await fetchActivities();
+    } catch (error) {
+      showMessage(
+        error.message,
+        "error"
+      );
     }
   };
 
-  // =========================================================
-  // 3. ANNOUNCEMENTS
-  // =========================================================
+  /* =========================================================
+     ANNOUNCEMENTS
+  ========================================================= */
 
-  const handleSaveAnnouncement = async (e) => {
-    e.preventDefault();
-
-    setLoading(true);
-
+  const fetchAnnouncements = async () => {
     try {
-      const { error } = await supabase
-        .from("announcements")
-        .insert([announcementForm]);
+      const { data, error } =
+        await supabase
+          .from("announcements")
+          .select("*")
+          .order("id", {
+            ascending: false,
+          });
 
       if (error) throw error;
 
-      setMessage({
-        text: "Announcement posted successfully!",
-        type: "success",
-      });
-
-      setAnnouncementForm({
-        badge: "",
-        date: "",
-        tag: "",
-        title: "",
-        description: "",
-      });
-
-      fetchData();
-    } catch (err) {
-      setMessage({
-        text: err.message,
-        type: "error",
-      });
-    } finally {
-      setLoading(false);
+      setAnnouncements(data || []);
+    } catch (error) {
+      showMessage(
+        error.message,
+        "error"
+      );
     }
   };
 
-  const handleDeleteAnnouncement = async (id) => {
-    if (
-      !window.confirm(
-        "Are you sure you want to remove this announcement?"
-      )
-    ) {
-      return;
-    }
+  const handleSaveAnnouncement =
+    async (e) => {
+      e.preventDefault();
 
-    try {
-      const { error } = await supabase
-        .from("announcements")
-        .delete()
-        .eq("id", id);
+      setLoading(true);
 
-      if (error) throw error;
+      try {
+        const { error } =
+          await supabase
+            .from("announcements")
+            .insert([
+              announcementForm,
+            ]);
 
-      setMessage({
-        text: "Announcement removed.",
-        type: "success",
-      });
+        if (error) throw error;
 
-      fetchData();
-    } catch (err) {
-      setMessage({
-        text: err.message,
-        type: "error",
-      });
-    }
-  };
+        showMessage(
+          "Announcement posted successfully."
+        );
 
-  // =========================================================
-  // 4. FACILITIES
-  // =========================================================
+        setAnnouncementForm({
+          badge: "",
+          date: "",
+          tag: "",
+          title: "",
+          description: "",
+        });
 
-  const handleSaveFacility = async (e) => {
-    e.preventDefault();
+        await fetchAnnouncements();
+      } catch (error) {
+        showMessage(
+          error.message,
+          "error"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    setLoading(true);
-
-    try {
-      let imageUrl = facilityForm.image;
-
-      if (facilityFile) {
-        imageUrl = await uploadImageFile(facilityFile);
+  const handleDeleteAnnouncement =
+    async (id) => {
+      if (
+        !window.confirm(
+          "Remove this announcement?"
+        )
+      ) {
+        return;
       }
 
-      const { error } = await supabase
-        .from("facilities")
-        .insert([
-          {
-            ...facilityForm,
-            image: imageUrl,
-          },
-        ]);
+      try {
+        const { error } =
+          await supabase
+            .from("announcements")
+            .delete()
+            .eq("id", id);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      setMessage({
-        text: "Facility added successfully!",
-        type: "success",
-      });
+        showMessage(
+          "Announcement removed."
+        );
 
-      setFacilityForm({
-        title: "",
-        description: "",
-        image: "",
-      });
+        await fetchAnnouncements();
+      } catch (error) {
+        showMessage(
+          error.message,
+          "error"
+        );
+      }
+    };
 
-      setFacilityFile(null);
+  /* =========================================================
+     FACILITIES
+  ========================================================= */
 
-      fetchData();
-    } catch (err) {
-      setMessage({
-        text: err.message,
-        type: "error",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDeleteFacility = async (id) => {
-    if (
-      !window.confirm(
-        "Are you sure you want to remove this facility?"
-      )
-    ) {
-      return;
-    }
-
+  const fetchFacilities = async () => {
     try {
-      const { error } = await supabase
-        .from("facilities")
-        .delete()
-        .eq("id", id);
+      const { data, error } =
+        await supabase
+          .from("facilities")
+          .select("*")
+          .order("id", {
+            ascending: false,
+          });
 
       if (error) throw error;
 
-      setMessage({
-        text: "Facility removed.",
-        type: "success",
-      });
-
-      fetchData();
-    } catch (err) {
-      setMessage({
-        text: err.message,
-        type: "error",
-      });
+      setFacilities(data || []);
+    } catch (error) {
+      showMessage(
+        error.message,
+        "error"
+      );
     }
   };
 
-  // =========================================================
-  // 5. VISION & MISSION
-  // =========================================================
+  const handleSaveFacility =
+    async (e) => {
+      e.preventDefault();
 
-  const handleSaveVisionMission = async (e) => {
-    e.preventDefault();
+      setLoading(true);
 
-    setLoading(true);
+      try {
+        let imageUrl =
+          facilityForm.image;
 
+        if (facilityFile) {
+          imageUrl =
+            await uploadImageFile(
+              facilityFile
+            );
+        }
+
+        const { error } =
+          await supabase
+            .from("facilities")
+            .insert([
+              {
+                title:
+                  facilityForm.title,
+                description:
+                  facilityForm.description,
+                image: imageUrl,
+              },
+            ]);
+
+        if (error) throw error;
+
+        showMessage(
+          "Facility added successfully."
+        );
+
+        setFacilityForm({
+          title: "",
+          description: "",
+          image: "",
+        });
+
+        setFacilityFile(null);
+
+        await fetchFacilities();
+      } catch (error) {
+        showMessage(
+          error.message,
+          "error"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+  const handleDeleteFacility =
+    async (id) => {
+      if (
+        !window.confirm(
+          "Remove this facility?"
+        )
+      ) {
+        return;
+      }
+
+      try {
+        const { error } =
+          await supabase
+            .from("facilities")
+            .delete()
+            .eq("id", id);
+
+        if (error) throw error;
+
+        showMessage(
+          "Facility removed."
+        );
+
+        await fetchFacilities();
+      } catch (error) {
+        showMessage(
+          error.message,
+          "error"
+        );
+      }
+    };
+
+  /* =========================================================
+     STAFF
+  ========================================================= */
+
+  const fetchStaff = async () => {
     try {
-      const { error } = await supabase
-        .from("vision_mission")
-        .upsert([visionMission]);
+      const { data, error } =
+        await supabase
+          .from("staff")
+          .select("*")
+          .order("id", {
+            ascending: false,
+          });
 
       if (error) throw error;
 
-      setMessage({
-        text: "Vision & Mission updated successfully!",
-        type: "success",
-      });
-
-      fetchData();
-    } catch (err) {
-      setMessage({
-        text: err.message,
-        type: "error",
-      });
-    } finally {
-      setLoading(false);
+      setStaff(data || []);
+    } catch (error) {
+      showMessage(
+        error.message,
+        "error"
+      );
     }
   };
-
-  // =========================================================
-  // 6. STAFF MANAGEMENT
-  // =========================================================
 
   const resetStaffForm = () => {
     setStaffForm({
@@ -660,70 +1014,80 @@ function AdminControl() {
     setIsEditingStaff(false);
   };
 
-  const handleSaveStaff = async (e) => {
-    e.preventDefault();
+  const handleSaveStaff =
+    async (e) => {
+      e.preventDefault();
 
-    setLoading(true);
+      setLoading(true);
 
-    try {
-      let imageUrl = staffForm.image;
+      try {
+        let imageUrl =
+          staffForm.image;
 
-      // Upload new image if selected
-      if (staffFile) {
-        imageUrl = await uploadImageFile(staffFile);
+        if (staffFile) {
+          imageUrl =
+            await uploadImageFile(
+              staffFile
+            );
+        }
+
+        const staffData = {
+          name:
+            staffForm.name.trim(),
+          position:
+            staffForm.position.trim(),
+          image: imageUrl,
+        };
+
+        if (isEditingStaff) {
+          const { error } =
+            await supabase
+              .from("staff")
+              .update(staffData)
+              .eq(
+                "id",
+                staffForm.id
+              );
+
+          if (error) throw error;
+
+          showMessage(
+            "Staff information updated."
+          );
+        } else {
+          const { error } =
+            await supabase
+              .from("staff")
+              .insert([
+                staffData,
+              ]);
+
+          if (error) throw error;
+
+          showMessage(
+            "Staff member added."
+          );
+        }
+
+        resetStaffForm();
+
+        await fetchStaff();
+      } catch (error) {
+        showMessage(
+          error.message,
+          "error"
+        );
+      } finally {
+        setLoading(false);
       }
-
-      const staffData = {
-        name: staffForm.name.trim(),
-        position: staffForm.position.trim(),
-        image: imageUrl,
-      };
-
-      if (isEditingStaff) {
-        const { error } = await supabase
-          .from("staff")
-          .update(staffData)
-          .eq("id", staffForm.id);
-
-        if (error) throw error;
-
-        setMessage({
-          text: "Staff information updated successfully!",
-          type: "success",
-        });
-      } else {
-        const { error } = await supabase
-          .from("staff")
-          .insert([staffData]);
-
-        if (error) throw error;
-
-        setMessage({
-          text: "Staff member added successfully!",
-          type: "success",
-        });
-      }
-
-      resetStaffForm();
-
-      fetchData();
-    } catch (err) {
-      console.error("Staff save error:", err);
-
-      setMessage({
-        text: err.message,
-        type: "error",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
   const handleEditStaff = (item) => {
     setStaffForm({
       id: item.id,
       name: item.name || "",
-      position: item.position || "",
+      position:
+        item.position || "",
       image: item.image || "",
     });
 
@@ -736,115 +1100,351 @@ function AdminControl() {
     });
   };
 
-  const handleDeleteStaff = async (id) => {
+  const handleDeleteStaff =
+    async (id) => {
+      if (
+        !window.confirm(
+          "Remove this staff member?"
+        )
+      ) {
+        return;
+      }
+
+      setLoading(true);
+
+      try {
+        const { error } =
+          await supabase
+            .from("staff")
+            .delete()
+            .eq("id", id);
+
+        if (error) throw error;
+
+        showMessage(
+          "Staff member removed."
+        );
+
+        await fetchStaff();
+      } catch (error) {
+        showMessage(
+          error.message,
+          "error"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+  /* =========================================================
+     VISION & MISSION
+  ========================================================= */
+
+  const fetchVisionMission =
+    async () => {
+      try {
+        const { data, error } =
+          await supabase
+            .from("vision_mission")
+            .select("*")
+            .limit(1)
+            .maybeSingle();
+
+        if (error) throw error;
+
+        if (data) {
+          setVisionMission(data);
+        }
+      } catch (error) {
+        showMessage(
+          error.message,
+          "error"
+        );
+      }
+    };
+
+  const handleSaveVisionMission =
+    async (e) => {
+      e.preventDefault();
+
+      setLoading(true);
+
+      try {
+        const payload = {
+          vision:
+            visionMission.vision,
+          mission:
+            visionMission.mission,
+        };
+
+        const { error } =
+          await supabase
+            .from("vision_mission")
+            .upsert([
+              payload,
+            ]);
+
+        if (error) throw error;
+
+        showMessage(
+          "Vision and Mission updated successfully."
+        );
+
+        await fetchVisionMission();
+      } catch (error) {
+        showMessage(
+          error.message,
+          "error"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+  /* =========================================================
+     DASHBOARD
+  ========================================================= */
+
+  const dashboardStats =
+    useMemo(() => {
+      return {
+        users: users.length,
+        requests: requests.length,
+        activities:
+          activities.length,
+        announcements:
+          announcements.length,
+        facilities:
+          facilities.length,
+        staff: staff.length,
+      };
+    }, [
+      users,
+      requests,
+      activities,
+      announcements,
+      facilities,
+      staff,
+    ]);
+
+  /* =========================================================
+     FORMATTERS
+  ========================================================= */
+
+  const formatDate = (date) => {
+    if (!date) return "—";
+
+    const parsedDate =
+      new Date(date);
+
     if (
-      !window.confirm(
-        "Are you sure you want to remove this staff member?"
+      Number.isNaN(
+        parsedDate.getTime()
       )
     ) {
-      return;
+      return date;
     }
 
-    setLoading(true);
-
-    try {
-      const { error } = await supabase
-        .from("staff")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
-
-      setMessage({
-        text: "Staff member removed successfully.",
-        type: "success",
-      });
-
-      fetchData();
-    } catch (err) {
-      setMessage({
-        text: err.message,
-        type: "error",
-      });
-    } finally {
-      setLoading(false);
-    }
+    return parsedDate.toLocaleDateString(
+      "en-PH",
+      {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      }
+    );
   };
 
-  // =========================================================
-  // RENDER
-  // =========================================================
+  const formatDateTime = (date) => {
+    if (!date) return "—";
+
+    const parsedDate =
+      new Date(date);
+
+    if (
+      Number.isNaN(
+        parsedDate.getTime()
+      )
+    ) {
+      return date;
+    }
+
+    return parsedDate.toLocaleString(
+      "en-PH",
+      {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }
+    );
+  };
+
+  const formatRequestType = (type) => {
+    if (!type) return "—";
+
+    return type
+      .replace(/_/g, " ")
+      .replace(
+        /\b\w/g,
+        (letter) =>
+          letter.toUpperCase()
+      );
+  };
+
+  const formatStatus = (status) => {
+    if (!status) return "Pending";
+
+    return status
+      .replace(/_/g, " ")
+      .replace(
+        /\b\w/g,
+        (letter) =>
+          letter.toUpperCase()
+      );
+  };
+
+  /* =========================================================
+     NAVIGATION
+  ========================================================= */
+
+  const navItems = [
+    {
+      id: "dashboard",
+      icon: "▦",
+      label: "Dashboard",
+    },
+    {
+      id: "users",
+      icon: "＋",
+      label: "User Management",
+    },
+    {
+      id: "user-list",
+      icon: "☷",
+      label: "User List",
+    },
+    {
+      id: "requests",
+      icon: "▤",
+      label: "Request Records",
+    },
+    {
+      id: "activities",
+      icon: "◷",
+      label: "Activities",
+    },
+    {
+      id: "announcements",
+      icon: "!",
+      label: "Announcements",
+    },
+    {
+      id: "facilities",
+      icon: "□",
+      label: "Facilities",
+    },
+    {
+      id: "staff",
+      icon: "♙",
+      label: "Staff Management",
+    },
+    {
+      id: "vision",
+      icon: "◇",
+      label: "Vision & Mission",
+    },
+  ];
+
+  /* =========================================================
+     RENDER
+  ========================================================= */
 
   return (
     <div className="admin-container">
 
       {/* =====================================================
           SIDEBAR
-      ====================================================== */}
+      ===================================================== */}
 
       <aside className="admin-sidebar">
 
-        <div className="sidebar-header">
-          <h2>Admin Control</h2>
+        <div className="sidebar-brand">
 
-          <span className="admin-badge">
-            Panel
-          </span>
+          <div className="sidebar-logo">
+            IMC
+          </div>
+
+          <div>
+            <h1>IMC Portal</h1>
+            <span>Administration</span>
+          </div>
+
         </div>
+
+        <div className="sidebar-divider" />
 
         <nav className="admin-nav">
 
-          <button
-            className={activeTab === "users" ? "active" : ""}
-            onClick={() => setActiveTab("users")}
-          >
-            👥 User Management
-          </button>
+          {navItems.map(
+            (item) => (
+              <button
+                key={item.id}
+                type="button"
+                className={
+                  activeTab === item.id
+                    ? "active"
+                    : ""
+                }
+                onClick={() =>
+                  setActiveTab(
+                    item.id
+                  )
+                }
+              >
+                <span className="nav-icon">
+                  {item.icon}
+                </span>
 
-          <button
-            className={activeTab === "activities" ? "active" : ""}
-            onClick={() => setActiveTab("activities")}
-          >
-            📅 Activities & News
-          </button>
-
-          <button
-            className={activeTab === "announcements" ? "active" : ""}
-            onClick={() => setActiveTab("announcements")}
-          >
-            📢 Announcements
-          </button>
-
-          <button
-            className={activeTab === "facilities" ? "active" : ""}
-            onClick={() => setActiveTab("facilities")}
-          >
-            🏢 Facilities
-          </button>
-
-          <button
-            className={activeTab === "staff" ? "active" : ""}
-            onClick={() => setActiveTab("staff")}
-          >
-            👨‍💼 Staff Management
-          </button>
-
-          <button
-            className={activeTab === "vision" ? "active" : ""}
-            onClick={() => setActiveTab("vision")}
-          >
-            🎯 Vision & Mission
-          </button>
+                <span>
+                  {item.label}
+                </span>
+              </button>
+            )
+          )}
 
         </nav>
 
-        <div className="sidebar-footer">
+        <div className="sidebar-bottom">
+
+          <div className="admin-profile">
+
+            <div className="admin-avatar">
+              A
+            </div>
+
+            <div>
+              <strong>
+                Administrator
+              </strong>
+
+              <span>
+                System Admin
+              </span>
+            </div>
+
+          </div>
 
           <button
-            onClick={handleLogout}
+            type="button"
             className="logout-btn"
+            onClick={
+              handleLogout
+            }
           >
-            🚪 Logout
+            <span>↪</span>
+            Logout
           </button>
 
         </div>
@@ -852,961 +1452,2169 @@ function AdminControl() {
       </aside>
 
       {/* =====================================================
-          MAIN CONTENT
-      ====================================================== */}
+          MAIN
+      ===================================================== */}
 
       <main className="admin-content">
 
+        {/* TOP BAR */}
+
+        <header className="admin-topbar">
+
+          <div>
+            <span className="topbar-label">
+              ADMINISTRATION
+            </span>
+
+            <h2>
+              {
+                navItems.find(
+                  (item) =>
+                    item.id ===
+                    activeTab
+                )?.label ||
+                  "Dashboard"
+              }
+            </h2>
+          </div>
+
+          <div className="topbar-status">
+            <span className="status-dot" />
+            System Online
+          </div>
+
+        </header>
+
+        {/* MESSAGE */}
+
         {message.text && (
-          <div className={`admin-alert ${message.type}`}>
+          <div
+            className={`admin-alert ${message.type}`}
+          >
             {message.text}
           </div>
         )}
 
         {/* ===================================================
-            TAB 1 — USERS
+            DASHBOARD
         ==================================================== */}
 
-        {activeTab === "users" && (
-          <section className="admin-section">
+        {activeTab ===
+          "dashboard" && (
+          <section className="page-section">
 
-            <h3>
-              User Accounts Management
-            </h3>
+            <div className="page-heading">
+              <div>
+                <h3>
+                  Dashboard Overview
+                </h3>
 
-            <form
-              onSubmit={handleSaveUser}
-              className="admin-form"
-            >
+                <p>
+                  Monitor users,
+                  requests, and
+                  portal content.
+                </p>
+              </div>
+            </div>
 
-              <h4>
-                {isEditingUser
-                  ? "Update User Account"
-                  : "Add New User Account"}
-              </h4>
+            <div className="stats-grid">
 
-              <input
-                type="email"
-                placeholder="User Email Address"
-                value={userForm.email}
-                onChange={(e) =>
-                  setUserForm({
-                    ...userForm,
-                    email: e.target.value,
-                  })
-                }
-                required
-              />
+              <div className="stat-card">
+                <span className="stat-label">
+                  TOTAL USERS
+                </span>
 
-              <input
-                type="password"
-                placeholder={
-                  isEditingUser
-                    ? "New Password (optional)"
-                    : "Temporary Password"
-                }
-                value={userForm.password}
-                onChange={(e) =>
-                  setUserForm({
-                    ...userForm,
-                    password: e.target.value,
-                  })
-                }
-                required={!isEditingUser}
-              />
+                <strong>
+                  {
+                    dashboardStats.users
+                  }
+                </strong>
 
-              <select
-                value={userForm.role}
-                onChange={(e) =>
-                  setUserForm({
-                    ...userForm,
-                    role: e.target.value,
-                  })
-                }
-              >
-                <option value="librarystaff">
-                  Library Staff
-                </option>
+                <small>
+                  Registered accounts
+                </small>
+              </div>
 
-                <option value="avrstaff">
-                  AVR Staff
-                </option>
+              <div className="stat-card">
+                <span className="stat-label">
+                  TOTAL REQUESTS
+                </span>
 
-                <option value="faculty">
-                  Faculty
-                </option>
+                <strong>
+                  {
+                    dashboardStats.requests
+                  }
+                </strong>
 
-                <option value="admin">
-                  Admin
-                </option>
-              </select>
+                <small>
+                  All library requests
+                </small>
+              </div>
 
-              <div className="form-buttons">
+              <div className="stat-card">
+                <span className="stat-label">
+                  PENDING
+                </span>
 
-                <button
-                  type="submit"
-                  className="primary-button"
-                  disabled={loading}
-                >
-                  {isEditingUser
-                    ? "Update Account"
-                    : "Create Account"}
-                </button>
+                <strong>
+                  {
+                    requestAnalytics.pending
+                  }
+                </strong>
 
-                {isEditingUser && (
+                <small>
+                  Awaiting action
+                </small>
+              </div>
+
+              <div className="stat-card">
+                <span className="stat-label">
+                  COMPLETED
+                </span>
+
+                <strong>
+                  {
+                    requestAnalytics.completed
+                  }
+                </strong>
+
+                <small>
+                  Completed requests
+                </small>
+              </div>
+
+            </div>
+
+            <div className="analytics-grid">
+
+              <div className="analytics-card">
+
+                <div className="analytics-card-header">
+
+                  <div>
+                    <span>
+                      REQUEST TYPES
+                    </span>
+
+                    <h4>
+                      Service Distribution
+                    </h4>
+                  </div>
+
+                </div>
+
+                <div className="analytics-row">
+                  <span>
+                    Library
+                  </span>
+
+                  <strong>
+                    {
+                      requestAnalytics.library
+                    }
+                  </strong>
+                </div>
+
+                <div className="analytics-row">
+                  <span>
+                    AVR Technical
+                  </span>
+
+                  <strong>
+                    {
+                      requestAnalytics.avr
+                    }
+                  </strong>
+                </div>
+
+              </div>
+
+              <div className="analytics-card">
+
+                <div className="analytics-card-header">
+
+                  <div>
+                    <span>
+                      REQUEST STATUS
+                    </span>
+
+                    <h4>
+                      Current Status
+                    </h4>
+                  </div>
+
+                </div>
+
+                <div className="analytics-row">
+                  <span>
+                    Pending
+                  </span>
+
+                  <strong>
+                    {
+                      requestAnalytics.pending
+                    }
+                  </strong>
+                </div>
+
+                <div className="analytics-row">
+                  <span>
+                    Assigned
+                  </span>
+
+                  <strong>
+                    {
+                      requestAnalytics.assigned
+                    }
+                  </strong>
+                </div>
+
+                <div className="analytics-row">
+                  <span>
+                    Completed
+                  </span>
+
+                  <strong>
+                    {
+                      requestAnalytics.completed
+                    }
+                  </strong>
+                </div>
+
+                <div className="analytics-row">
+                  <span>
+                    Cancelled
+                  </span>
+
+                  <strong>
+                    {
+                      requestAnalytics.cancelled
+                    }
+                  </strong>
+                </div>
+
+              </div>
+
+            </div>
+
+            <div className="dashboard-lower">
+
+              <div className="dashboard-card">
+
+                <h4>
+                  Portal Content
+                </h4>
+
+                <div className="content-stat">
+                  <span>
+                    Activities
+                  </span>
+
+                  <strong>
+                    {
+                      dashboardStats.activities
+                    }
+                  </strong>
+                </div>
+
+                <div className="content-stat">
+                  <span>
+                    Announcements
+                  </span>
+
+                  <strong>
+                    {
+                      dashboardStats.announcements
+                    }
+                  </strong>
+                </div>
+
+                <div className="content-stat">
+                  <span>
+                    Facilities
+                  </span>
+
+                  <strong>
+                    {
+                      dashboardStats.facilities
+                    }
+                  </strong>
+                </div>
+
+                <div className="content-stat">
+                  <span>
+                    Staff
+                  </span>
+
+                  <strong>
+                    {
+                      dashboardStats.staff
+                    }
+                  </strong>
+                </div>
+
+              </div>
+
+              <div className="dashboard-card">
+
+                <div className="dashboard-card-header">
+                  <div>
+                    <h4>
+                      Recent Requests
+                    </h4>
+
+                    <small>
+                      Showing latest records
+                    </small>
+                  </div>
+
                   <button
                     type="button"
-                    className="secondary-button"
-                    onClick={() => {
-                      setIsEditingUser(false);
-
-                      setUserForm({
-                        id: null,
-                        email: "",
-                        password: "",
-                        role: "librarystaff",
-                      });
-                    }}
+                    className="outline-button"
+                    onClick={() =>
+                      setActiveTab(
+                        "requests"
+                      )
+                    }
                   >
-                    Cancel
+                    View All
                   </button>
+                </div>
+
+                {requests.length ===
+                0 ? (
+                  <p className="empty-text">
+                    No request records found.
+                  </p>
+                ) : (
+                  <div className="recent-list">
+
+                    {requests
+                      .slice(0, 5)
+                      .map(
+                        (
+                          request
+                        ) => (
+                          <div
+                            key={
+                              request.id
+                            }
+                            className="recent-item"
+                          >
+
+                            <div>
+                              <strong>
+                                {
+                                  request.requester_name ||
+                                  request.requester_email ||
+                                  "Unknown requester"
+                                }
+                              </strong>
+
+                              <span>
+                                {formatRequestType(
+                                  request.request_type
+                                )}
+                              </span>
+                            </div>
+
+                            <div>
+                              <small>
+                                {formatDate(
+                                  request.request_date ||
+                                    request.created_at
+                                )}
+                              </small>
+
+                              <span
+                                className={`status-badge ${request.status
+                                  ?.toLowerCase()
+                                  .replace(
+                                    /\s+/g,
+                                    "-"
+                                  )}`}
+                              >
+                                {formatStatus(
+                                  request.status
+                                )}
+                              </span>
+                            </div>
+
+                          </div>
+                        )
+                      )}
+
+                  </div>
                 )}
 
               </div>
 
-            </form>
-
-            <div className="user-filter-bar">
-
-              <h4>
-                All User Accounts ({filteredUsers.length})
-              </h4>
-
-              <select
-                value={roleFilter}
-                onChange={(e) =>
-                  setRoleFilter(e.target.value)
-                }
-              >
-                <option value="all">
-                  Filter: All Roles
-                </option>
-
-                <option value="admin">
-                  Admin
-                </option>
-
-                <option value="librarystaff">
-                  Library Staff
-                </option>
-
-                <option value="avrstaff">
-                  AVR Staff
-                </option>
-
-                <option value="faculty">
-                  Faculty
-                </option>
-              </select>
-
-            </div>
-
-            <div className="admin-table-wrapper">
-
-              <table>
-
-                <thead>
-                  <tr>
-                    <th>Email</th>
-                    <th>Role</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-
-                  {filteredUsers.length === 0 ? (
-
-                    <tr>
-                      <td
-                        colSpan="3"
-                        style={{
-                          textAlign: "center",
-                          color: "#666",
-                        }}
-                      >
-                        No users found for this filter.
-                      </td>
-                    </tr>
-
-                  ) : (
-
-                    filteredUsers.map((u) => (
-
-                      <tr key={u.id}>
-
-                        <td>
-                          {u.email}
-                        </td>
-
-                        <td>
-                          <span
-                            className={`badge-role ${u.role}`}
-                          >
-                            {u.role}
-                          </span>
-                        </td>
-
-                        <td>
-
-                          {u.role === "admin" ? (
-
-                            <span
-                              style={{
-                                fontSize: "0.8rem",
-                                color: "#94a3b8",
-                                fontStyle: "italic",
-                              }}
-                            >
-                              Protected Admin
-                            </span>
-
-                          ) : (
-
-                            <>
-                              <button
-                                onClick={() =>
-                                  handleEditUser(u)
-                                }
-                                className="btn-edit"
-                              >
-                                Edit
-                              </button>
-
-                              <button
-                                onClick={() =>
-                                  handleDeleteUser(u.id)
-                                }
-                                className="btn-delete"
-                              >
-                                Delete
-                              </button>
-                            </>
-
-                          )}
-
-                        </td>
-
-                      </tr>
-
-                    ))
-
-                  )}
-
-                </tbody>
-
-              </table>
-
             </div>
 
           </section>
         )}
 
         {/* ===================================================
-            TAB 2 — ACTIVITIES
+            USER MANAGEMENT
         ==================================================== */}
 
-        {activeTab === "activities" && (
-          <section className="admin-section">
+        {activeTab ===
+          "users" && (
+          <section className="page-section">
 
-            <h3>
-              Manage Activities & Campus News
-            </h3>
+            <div className="page-heading">
 
-            <form
-              onSubmit={handleSaveActivity}
-              className="admin-form"
-            >
+              <div>
+                <h3>
+                  User Management
+                </h3>
 
-              <input
-                type="text"
-                placeholder="Title"
-                value={activityForm.title}
-                onChange={(e) =>
-                  setActivityForm({
-                    ...activityForm,
-                    title: e.target.value,
-                  })
-                }
-                required
-              />
-
-              <input
-                type="text"
-                placeholder="Date (e.g. 11 August 2026)"
-                value={activityForm.date}
-                onChange={(e) =>
-                  setActivityForm({
-                    ...activityForm,
-                    date: e.target.value,
-                  })
-                }
-                required
-              />
-
-              <div className="file-input-group">
-
-                <label>
-                  Upload Image File (Optional):
-                </label>
-
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) =>
-                    setActivityFile(
-                      e.target.files[0]
-                    )
-                  }
-                />
-
+                <p>
+                  Create portal user
+                  accounts.
+                </p>
               </div>
-
-              <input
-                type="text"
-                placeholder="Or Image URL (Optional)"
-                value={activityForm.image}
-                onChange={(e) =>
-                  setActivityForm({
-                    ...activityForm,
-                    image: e.target.value,
-                  })
-                }
-              />
-
-              <textarea
-                placeholder="Body Description"
-                value={activityForm.description}
-                onChange={(e) =>
-                  setActivityForm({
-                    ...activityForm,
-                    description: e.target.value,
-                  })
-                }
-                rows="4"
-                required
-              />
 
               <button
-                type="submit"
-                className="primary-button"
-                disabled={loading}
+                type="button"
+                className="outline-button"
+                onClick={() =>
+                  setActiveTab(
+                    "user-list"
+                  )
+                }
               >
-                Upload Activity
+                View User List
               </button>
-
-            </form>
-
-            <h4 style={{ marginTop: "2rem" }}>
-              Posted Activities Overview ({activities.length})
-            </h4>
-
-            <div className="admin-list">
-
-              {activities.length === 0 ? (
-
-                <p style={{ color: "#666" }}>
-                  No activities posted yet.
-                </p>
-
-              ) : (
-
-                activities.map((item) => (
-
-                  <div
-                    key={item.id}
-                    className="admin-item-card"
-                  >
-
-                    {item.image && (
-                      <img
-                        src={item.image}
-                        alt=""
-                      />
-                    )}
-
-                    <div style={{ flex: 1 }}>
-
-                      <strong>
-                        {item.title}
-                      </strong>
-
-                      <p>
-                        {item.date}
-                      </p>
-
-                    </div>
-
-                    <button
-                      onClick={() =>
-                        handleDeleteActivity(item.id)
-                      }
-                      className="btn-delete"
-                    >
-                      Delete
-                    </button>
-
-                  </div>
-
-                ))
-
-              )}
 
             </div>
 
-          </section>
-        )}
+            <div className="form-card">
 
-        {/* ===================================================
-            TAB 3 — ANNOUNCEMENTS
-        ==================================================== */}
+              <div className="form-card-header">
 
-        {activeTab === "announcements" && (
-          <section className="admin-section">
-
-            <h3>
-              Manage Official Announcements
-            </h3>
-
-            <form
-              onSubmit={handleSaveAnnouncement}
-              className="admin-form"
-            >
-
-              <input
-                type="text"
-                placeholder="Badge Text (e.g. IMPORTANT NOTICE)"
-                value={announcementForm.badge}
-                onChange={(e) =>
-                  setAnnouncementForm({
-                    ...announcementForm,
-                    badge: e.target.value,
-                  })
-                }
-                required
-              />
-
-              <input
-                type="text"
-                placeholder="Date (e.g. AUGUST 14, 2026)"
-                value={announcementForm.date}
-                onChange={(e) =>
-                  setAnnouncementForm({
-                    ...announcementForm,
-                    date: e.target.value,
-                  })
-                }
-                required
-              />
-
-              <input
-                type="text"
-                placeholder="Tag (e.g. Library)"
-                value={announcementForm.tag}
-                onChange={(e) =>
-                  setAnnouncementForm({
-                    ...announcementForm,
-                    tag: e.target.value,
-                  })
-                }
-                required
-              />
-
-              <input
-                type="text"
-                placeholder="Title"
-                value={announcementForm.title}
-                onChange={(e) =>
-                  setAnnouncementForm({
-                    ...announcementForm,
-                    title: e.target.value,
-                  })
-                }
-                required
-              />
-
-              <textarea
-                placeholder="Description Body"
-                value={announcementForm.description}
-                onChange={(e) =>
-                  setAnnouncementForm({
-                    ...announcementForm,
-                    description: e.target.value,
-                  })
-                }
-                rows="4"
-                required
-              />
-
-              <button
-                type="submit"
-                className="primary-button"
-                disabled={loading}
-              >
-                Upload Announcement
-              </button>
-
-            </form>
-
-            <h4 style={{ marginTop: "2rem" }}>
-              Posted Announcements Overview ({announcements.length})
-            </h4>
-
-            <div className="admin-list">
-
-              {announcements.length === 0 ? (
-
-                <p style={{ color: "#666" }}>
-                  No announcements posted yet.
-                </p>
-
-              ) : (
-
-                announcements.map((item) => (
-
-                  <div
-                    key={item.id}
-                    className="admin-item-card"
-                  >
-
-                    <div style={{ flex: 1 }}>
-
-                      <span
-                        style={{
-                          background: "#e2e8f0",
-                          padding: "2px 6px",
-                          fontSize: "0.75rem",
-                          borderRadius: "4px",
-                        }}
-                      >
-                        {item.badge}
-                      </span>
-
-                      <strong
-                        style={{
-                          display: "block",
-                          marginTop: "4px",
-                        }}
-                      >
-                        {item.title}
-                      </strong>
-
-                      <p>
-                        {item.date} | {item.tag}
-                      </p>
-
-                    </div>
-
-                    <button
-                      onClick={() =>
-                        handleDeleteAnnouncement(item.id)
-                      }
-                      className="btn-delete"
-                    >
-                      Delete
-                    </button>
-
-                  </div>
-
-                ))
-
-              )}
-
-            </div>
-
-          </section>
-        )}
-
-        {/* ===================================================
-            TAB 4 — FACILITIES
-        ==================================================== */}
-
-        {activeTab === "facilities" && (
-          <section className="admin-section">
-
-            <h3>
-              Manage Facilities
-            </h3>
-
-            <form
-              onSubmit={handleSaveFacility}
-              className="admin-form"
-            >
-
-              <input
-                type="text"
-                placeholder="Facility Title"
-                value={facilityForm.title}
-                onChange={(e) =>
-                  setFacilityForm({
-                    ...facilityForm,
-                    title: e.target.value,
-                  })
-                }
-                required
-              />
-
-              <div className="file-input-group">
-
-                <label>
-                  Upload Image File (Optional):
-                </label>
-
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) =>
-                    setFacilityFile(
-                      e.target.files[0]
-                    )
-                  }
-                />
-
-              </div>
-
-              <input
-                type="text"
-                placeholder="Or Image URL (Optional)"
-                value={facilityForm.image}
-                onChange={(e) =>
-                  setFacilityForm({
-                    ...facilityForm,
-                    image: e.target.value,
-                  })
-                }
-              />
-
-              <textarea
-                placeholder="Facility Body Description"
-                value={facilityForm.description}
-                onChange={(e) =>
-                  setFacilityForm({
-                    ...facilityForm,
-                    description: e.target.value,
-                  })
-                }
-                rows="4"
-                required
-              />
-
-              <button
-                type="submit"
-                className="primary-button"
-                disabled={loading}
-              >
-                Add Facility
-              </button>
-
-            </form>
-
-            <h4 style={{ marginTop: "2rem" }}>
-              Posted Facilities Overview ({facilities.length})
-            </h4>
-
-            <div className="admin-list">
-
-              {facilities.length === 0 ? (
-
-                <p style={{ color: "#666" }}>
-                  No facilities posted yet.
-                </p>
-
-              ) : (
-
-                facilities.map((item) => (
-
-                  <div
-                    key={item.id}
-                    className="admin-item-card"
-                  >
-
-                    {item.image && (
-                      <img
-                        src={item.image}
-                        alt=""
-                      />
-                    )}
-
-                    <div style={{ flex: 1 }}>
-
-                      <strong>
-                        {item.title}
-                      </strong>
-
-                      <p>
-                        {item.description
-                          ? `${item.description.substring(
-                              0,
-                              60
-                            )}...`
-                          : ""}
-                      </p>
-
-                    </div>
-
-                    <button
-                      onClick={() =>
-                        handleDeleteFacility(item.id)
-                      }
-                      className="btn-delete"
-                    >
-                      Delete
-                    </button>
-
-                  </div>
-
-                ))
-
-              )}
-
-            </div>
-
-          </section>
-        )}
-
-        {/* ===================================================
-            TAB 5 — STAFF
-        ==================================================== */}
-
-        {activeTab === "staff" && (
-          <section className="admin-section">
-
-            <h3>
-              Manage Library Staff
-            </h3>
-
-            <p className="section-description">
-              Add and manage the staff members that will
-              appear on the public staff page.
-            </p>
-
-            {/* STAFF FORM */}
-
-            <form
-              onSubmit={handleSaveStaff}
-              className="admin-form staff-form"
-            >
-
-              <h4>
-                {isEditingStaff
-                  ? "Update Staff Member"
-                  : "Add New Staff Member"}
-              </h4>
-
-              {/* NAME */}
-
-              <div className="staff-form-field">
-
-                <label>
-                  Staff Full Name
-                </label>
-
-                <input
-                  type="text"
-                  placeholder="e.g. Juan Dela Cruz"
-                  value={staffForm.name}
-                  onChange={(e) =>
-                    setStaffForm({
-                      ...staffForm,
-                      name: e.target.value,
-                    })
-                  }
-                  required
-                />
-
-              </div>
-
-              {/* POSITION */}
-
-              <div className="staff-form-field">
-
-                <label>
-                  Position
-                </label>
-
-                <input
-                  type="text"
-                  placeholder="e.g. University Librarian"
-                  value={staffForm.position}
-                  onChange={(e) =>
-                    setStaffForm({
-                      ...staffForm,
-                      position: e.target.value,
-                    })
-                  }
-                  required
-                />
-
-              </div>
-
-              {/* IMAGE */}
-
-              <div className="file-input-group staff-image-upload">
-
-                <label>
-                  Staff Image
-                </label>
-
-                <input
-                  type="file"
-                  accept="image/png,image/jpeg,image/jpg,image/webp"
-                  onChange={(e) =>
-                    setStaffFile(
-                      e.target.files[0] || null
-                    )
-                  }
-                />
-
-                <small>
-                  Recommended: square staff photo,
-                  JPG or PNG.
-                </small>
-
-              </div>
-
-              {/* EXISTING IMAGE */}
-
-              {staffForm.image && !staffFile && (
-                <div className="staff-current-image">
-
+                <div>
                   <span>
-                    Current Image
+                    ACCOUNT INFORMATION
                   </span>
 
-                  <img
-                    src={staffForm.image}
-                    alt={staffForm.name}
+                  <h4>
+                    {isEditingUser
+                      ? "Edit User"
+                      : "Create New User"}
+                  </h4>
+                </div>
+
+              </div>
+
+              <form
+                onSubmit={
+                  handleSaveUser
+                }
+                className="admin-form"
+              >
+
+                <div className="form-grid">
+
+                  <div className="form-field">
+
+                    <label>
+                      Email Address
+                    </label>
+
+                    <input
+                      type="email"
+                      value={
+                        userForm.email
+                      }
+                      placeholder="user@example.com"
+                      onChange={(
+                        e
+                      ) =>
+                        setUserForm({
+                          ...userForm,
+                          email:
+                            e.target
+                              .value,
+                        })
+                      }
+                      required
+                    />
+
+                  </div>
+
+                  <div className="form-field">
+
+                    <label>
+                      Role
+                    </label>
+
+                    <select
+                      value={
+                        userForm.role
+                      }
+                      onChange={(
+                        e
+                      ) =>
+                        setUserForm({
+                          ...userForm,
+                          role:
+                            e.target
+                              .value,
+                        })
+                      }
+                    >
+
+                      <option value="librarystaff">
+                        Library Staff
+                      </option>
+
+                      <option value="avrstaff">
+                        AVR Staff
+                      </option>
+
+                      <option value="faculty">
+                        Faculty
+                      </option>
+
+                      <option value="admin">
+                        Administrator
+                      </option>
+
+                    </select>
+
+                  </div>
+
+                </div>
+
+                {!isEditingUser && (
+                  <div className="form-field">
+
+                    <label>
+                      Temporary Password
+                    </label>
+
+                    <input
+                      type="password"
+                      value={
+                        userForm.password
+                      }
+                      placeholder="Enter temporary password"
+                      onChange={(
+                        e
+                      ) =>
+                        setUserForm({
+                          ...userForm,
+                          password:
+                            e.target
+                              .value,
+                        })
+                      }
+                      required
+                    />
+
+                    <small>
+                      Required by
+                      Supabase Auth when
+                      creating an
+                      email/password
+                      account.
+                    </small>
+
+                  </div>
+                )}
+
+                <div className="form-buttons">
+
+                  <button
+                    type="submit"
+                    className="primary-button"
+                    disabled={
+                      loading
+                    }
+                  >
+                    {loading
+                      ? "Saving..."
+                      : isEditingUser
+                      ? "Update User"
+                      : "Create User"}
+                  </button>
+
+                  {isEditingUser && (
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={
+                        resetUserForm
+                      }
+                    >
+                      Cancel
+                    </button>
+                  )}
+
+                </div>
+
+              </form>
+
+            </div>
+
+          </section>
+        )}
+
+        {/* ===================================================
+            USER LIST
+        ==================================================== */}
+
+        {activeTab ===
+          "user-list" && (
+          <section className="page-section">
+
+            <div className="page-heading">
+
+              <div>
+                <h3>
+                  User List
+                </h3>
+
+                <p>
+                  Manage registered
+                  portal accounts.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="primary-button"
+                onClick={() => {
+                  resetUserForm();
+                  setActiveTab(
+                    "users"
+                  );
+                }}
+              >
+                + Add User
+              </button>
+
+            </div>
+
+            <div className="table-card">
+
+              <div className="table-toolbar">
+
+                <div className="table-title">
+
+                  <strong>
+                    All Users
+                  </strong>
+
+                  <span>
+                    {
+                      filteredUsers.length
+                    }{" "}
+                    records
+                  </span>
+
+                </div>
+
+                <div className="table-filters">
+
+                  <input
+                    type="search"
+                    placeholder="Search email..."
+                    value={
+                      userSearch
+                    }
+                    onChange={(
+                      e
+                    ) =>
+                      setUserSearch(
+                        e.target
+                          .value
+                      )
+                    }
+                  />
+
+                  <select
+                    value={
+                      roleFilter
+                    }
+                    onChange={(
+                      e
+                    ) =>
+                      setRoleFilter(
+                        e.target
+                          .value
+                      )
+                    }
+                  >
+
+                    <option value="all">
+                      All Roles
+                    </option>
+
+                    <option value="admin">
+                      Administrator
+                    </option>
+
+                    <option value="librarystaff">
+                      Library Staff
+                    </option>
+
+                    <option value="avrstaff">
+                      AVR Staff
+                    </option>
+
+                    <option value="faculty">
+                      Faculty
+                    </option>
+
+                  </select>
+
+                </div>
+
+              </div>
+
+              <div className="admin-table-wrapper">
+
+                <table className="admin-table">
+
+                  <thead>
+                    <tr>
+                      <th>
+                        Email
+                      </th>
+
+                      <th>
+                        Role
+                      </th>
+
+                      <th>
+                        Account ID
+                      </th>
+
+                      <th>
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+
+                    {filteredUsers.length ===
+                    0 ? (
+                      <tr>
+                        <td
+                          colSpan="4"
+                          className="empty-table"
+                        >
+                          No users found.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredUsers.map(
+                        (user) => (
+                          <tr
+                            key={
+                              user.id
+                            }
+                          >
+
+                            <td>
+                              <strong className="email-cell">
+                                {
+                                  user.email
+                                }
+                              </strong>
+                            </td>
+
+                            <td>
+                              <span
+                                className={`role-badge ${user.role}`}
+                              >
+                                {user.role ===
+                                "librarystaff"
+                                  ? "Library Staff"
+                                  : user.role ===
+                                    "avrstaff"
+                                  ? "AVR Staff"
+                                  : user.role ===
+                                    "faculty"
+                                  ? "Faculty"
+                                  : "Administrator"}
+                              </span>
+                            </td>
+
+                            <td>
+                              <span className="id-cell">
+                                {
+                                  user.id
+                                }
+                              </span>
+                            </td>
+
+                            <td>
+
+                              <div className="action-group">
+
+                                {user.role ===
+                                "admin" ? (
+                                  <span className="protected-account">
+                                    Protected
+                                  </span>
+                                ) : (
+                                  <>
+                                    <button
+                                      type="button"
+                                      className="table-edit"
+                                      onClick={() =>
+                                        handleEditUser(
+                                          user
+                                        )
+                                      }
+                                    >
+                                      Edit
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      className="table-delete"
+                                      onClick={() =>
+                                        handleDeleteUser(
+                                          user
+                                        )
+                                      }
+                                    >
+                                      Delete
+                                    </button>
+                                  </>
+                                )}
+
+                              </div>
+
+                            </td>
+
+                          </tr>
+                        )
+                      )
+                    )}
+
+                  </tbody>
+
+                </table>
+
+              </div>
+
+            </div>
+
+          </section>
+        )}
+
+        {/* ===================================================
+            REQUEST RECORDS
+        ==================================================== */}
+
+        {activeTab ===
+          "requests" && (
+          <section className="page-section">
+
+            <div className="page-heading">
+
+              <div>
+                <h3>
+                  Request Records
+                </h3>
+
+                <p>
+                  All library service
+                  requests including
+                  completed records.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="outline-button"
+                onClick={fetchRequests}
+                disabled={loading}
+              >
+                ↻ Refresh Records
+              </button>
+
+            </div>
+
+            {/* REQUEST STATISTICS */}
+
+            <div className="request-stat-grid">
+
+              <div className="request-stat">
+                <span>
+                  Total Requests
+                </span>
+
+                <strong>
+                  {
+                    requestAnalytics.total
+                  }
+                </strong>
+              </div>
+
+              <div className="request-stat">
+                <span>
+                  Pending
+                </span>
+
+                <strong>
+                  {
+                    requestAnalytics.pending
+                  }
+                </strong>
+              </div>
+
+              <div className="request-stat">
+                <span>
+                  Assigned
+                </span>
+
+                <strong>
+                  {
+                    requestAnalytics.assigned
+                  }
+                </strong>
+              </div>
+
+              <div className="request-stat">
+                <span>
+                  Completed
+                </span>
+
+                <strong>
+                  {
+                    requestAnalytics.completed
+                  }
+                </strong>
+              </div>
+
+              <div className="request-stat">
+                <span>
+                  Cancelled
+                </span>
+
+                <strong>
+                  {
+                    requestAnalytics.cancelled
+                  }
+                </strong>
+              </div>
+
+              <div className="request-stat">
+                <span>
+                  Library
+                </span>
+
+                <strong>
+                  {
+                    requestAnalytics.library
+                  }
+                </strong>
+              </div>
+
+            </div>
+
+            <div className="table-card">
+
+              <div className="table-toolbar">
+
+                <div className="table-title">
+
+                  <strong>
+                    Request History
+                  </strong>
+
+                  <span>
+                    {
+                      filteredRequests.length
+                    }{" "}
+                    records
+                  </span>
+
+                </div>
+
+                <div className="table-filters request-filters">
+
+                  <input
+                    type="search"
+                    placeholder="Search requester..."
+                    value={
+                      requestSearch
+                    }
+                    onChange={(
+                      e
+                    ) =>
+                      setRequestSearch(
+                        e.target
+                          .value
+                      )
+                    }
+                  />
+
+                  <select
+                    value={
+                      requestTypeFilter
+                    }
+                    onChange={(
+                      e
+                    ) =>
+                      setRequestTypeFilter(
+                        e.target
+                          .value
+                      )
+                    }
+                  >
+
+                    <option value="all">
+                      All Types
+                    </option>
+
+                    <option value="library">
+                      Library
+                    </option>
+
+                    <option value="avr technical">
+                      AVR Technical
+                    </option>
+
+                  </select>
+
+                  <select
+                    value={
+                      requestStatusFilter
+                    }
+                    onChange={(
+                      e
+                    ) =>
+                      setRequestStatusFilter(
+                        e.target
+                          .value
+                      )
+                    }
+                  >
+
+                    <option value="all">
+                      All Status
+                    </option>
+
+                    <option value="Pending">
+                      Pending
+                    </option>
+
+                    <option value="Assigned">
+                      Assigned
+                    </option>
+
+                    <option value="Completed">
+                      Completed
+                    </option>
+
+                    <option value="Cancelled">
+                      Cancelled
+                    </option>
+
+                  </select>
+
+                </div>
+
+              </div>
+
+              <div className="admin-table-wrapper">
+
+                <table className="admin-table">
+
+                  <thead>
+
+                    <tr>
+
+                      <th>
+                        Requester
+                      </th>
+
+                      <th>
+                        Email
+                      </th>
+
+                      <th>
+                        Date Requested
+                      </th>
+
+                      <th>
+                        Request Type
+                      </th>
+
+                      <th>
+                        Details
+                      </th>
+
+                      <th>
+                        Assigned Staff
+                      </th>
+
+                      <th>
+                        Status
+                      </th>
+
+                    </tr>
+
+                  </thead>
+
+                  <tbody>
+
+                    {filteredRequests.length ===
+                    0 ? (
+                      <tr>
+                        <td
+                          colSpan="7"
+                          className="empty-table"
+                        >
+                          No request
+                          records found.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredRequests.map(
+                        (
+                          request
+                        ) => (
+                          <tr
+                            key={
+                              request.id
+                            }
+                          >
+
+                            {/* REQUESTER NAME */}
+
+                            <td>
+                              <strong>
+                                {
+                                  request.requester_name ||
+                                  "—"
+                                }
+                              </strong>
+                            </td>
+
+                            {/* EMAIL */}
+
+                            <td>
+                              <strong className="email-cell">
+                                {
+                                  request.requester_email ||
+                                  "—"
+                                }
+                              </strong>
+                            </td>
+
+                            {/* DATE */}
+
+                            <td>
+                              {formatDateTime(
+                                request.request_date ||
+                                  request.created_at
+                              )}
+                            </td>
+
+                            {/* REQUEST TYPE */}
+
+                            <td>
+                              <span className="request-type">
+                                {formatRequestType(
+                                  request.request_type
+                                )}
+                              </span>
+                            </td>
+
+                            {/* DETAILS */}
+
+                            <td>
+                              <span
+                                title={
+                                  request.details ||
+                                  ""
+                                }
+                              >
+                                {request.details
+                                  ? request.details
+                                      .length >
+                                    60
+                                    ? `${request.details.substring(
+                                        0,
+                                        60
+                                      )}...`
+                                    : request.details
+                                  : "—"}
+                              </span>
+                            </td>
+
+                            {/* ASSIGNED STAFF */}
+
+                            <td>
+                              {
+                                request.assigned_staff_id ||
+                                "Unassigned"
+                              }
+                            </td>
+
+                            {/* STATUS */}
+
+                            <td>
+                              <span
+                                className={`status-badge ${request.status
+                                  ?.toLowerCase()
+                                  .replace(
+                                    /\s+/g,
+                                    "-"
+                                  )}`}
+                              >
+                                {formatStatus(
+                                  request.status
+                                )}
+                              </span>
+                            </td>
+
+                          </tr>
+                        )
+                      )
+                    )}
+
+                  </tbody>
+
+                </table>
+
+              </div>
+
+            </div>
+
+          </section>
+        )}
+
+        {/* ===================================================
+            ACTIVITIES
+        ==================================================== */}
+
+        {activeTab ===
+          "activities" && (
+          <section className="page-section">
+
+            <div className="page-heading">
+              <div>
+                <h3>
+                  Activities & Campus News
+                </h3>
+
+                <p>
+                  Publish activities and
+                  news to the public
+                  portal.
+                </p>
+              </div>
+            </div>
+
+            <div className="form-card">
+
+              <form
+                onSubmit={
+                  handleSaveActivity
+                }
+                className="admin-form"
+              >
+
+                <div className="form-field">
+
+                  <label>
+                    Activity Title
+                  </label>
+
+                  <input
+                    type="text"
+                    value={
+                      activityForm.title
+                    }
+                    onChange={(e) =>
+                      setActivityForm({
+                        ...activityForm,
+                        title:
+                          e.target.value,
+                      })
+                    }
+                    required
                   />
 
                 </div>
-              )}
 
-              {/* BUTTONS */}
+                <div className="form-field">
 
-              <div className="form-buttons">
+                  <label>
+                    Date
+                  </label>
+
+                  <input
+                    type="text"
+                    placeholder="11 August 2026"
+                    value={
+                      activityForm.date
+                    }
+                    onChange={(e) =>
+                      setActivityForm({
+                        ...activityForm,
+                        date:
+                          e.target.value,
+                      })
+                    }
+                    required
+                  />
+
+                </div>
+
+                <div className="form-field">
+
+                  <label>
+                    Image
+                  </label>
+
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) =>
+                      setActivityFile(
+                        e.target
+                          .files[0] ||
+                          null
+                      )
+                    }
+                  />
+
+                </div>
+
+                <div className="form-field">
+
+                  <label>
+                    Image URL
+                  </label>
+
+                  <input
+                    type="text"
+                    value={
+                      activityForm.image
+                    }
+                    placeholder="Optional image URL"
+                    onChange={(e) =>
+                      setActivityForm({
+                        ...activityForm,
+                        image:
+                          e.target.value,
+                      })
+                    }
+                  />
+
+                </div>
+
+                <div className="form-field">
+
+                  <label>
+                    Description
+                  </label>
+
+                  <textarea
+                    rows="5"
+                    value={
+                      activityForm.description
+                    }
+                    onChange={(e) =>
+                      setActivityForm({
+                        ...activityForm,
+                        description:
+                          e.target.value,
+                      })
+                    }
+                    required
+                  />
+
+                </div>
 
                 <button
                   type="submit"
                   className="primary-button"
-                  disabled={loading}
+                  disabled={
+                    loading
+                  }
                 >
                   {loading
-                    ? "Saving..."
-                    : isEditingStaff
-                    ? "Update Staff"
-                    : "Add Staff"}
+                    ? "Publishing..."
+                    : "Publish Activity"}
                 </button>
 
-                {isEditingStaff && (
-                  <button
-                    type="button"
-                    className="secondary-button"
-                    onClick={resetStaffForm}
-                  >
-                    Cancel
-                  </button>
-                )}
-
-              </div>
-
-            </form>
-
-            {/* STAFF LIST */}
-
-            <div className="staff-list-header">
-
-              <h4>
-                Staff Directory ({staff.length})
-              </h4>
+              </form>
 
             </div>
 
-            <div className="staff-admin-grid">
+            <div className="content-list-section">
 
-              {staff.length === 0 ? (
+              <div className="list-header">
 
-                <div className="staff-empty">
+                <h4>
+                  Posted Activities
+                </h4>
 
-                  <div className="staff-empty-icon">
-                    👨‍💼
+                <span>
+                  {
+                    activities.length
+                  }
+                </span>
+
+              </div>
+
+              {activities.map(
+                (item) => (
+                  <div
+                    key={
+                      item.id
+                    }
+                    className="content-list-item"
+                  >
+
+                    {item.image && (
+                      <img
+                        src={
+                          item.image
+                        }
+                        alt=""
+                      />
+                    )}
+
+                    <div className="content-list-info">
+
+                      <strong>
+                        {
+                          item.title
+                        }
+                      </strong>
+
+                      <span>
+                        {item.date}
+                      </span>
+
+                    </div>
+
+                    <button
+                      type="button"
+                      className="table-delete"
+                      onClick={() =>
+                        handleDeleteActivity(
+                          item.id
+                        )
+                      }
+                    >
+                      Delete
+                    </button>
+
+                  </div>
+                )
+              )}
+
+              {activities.length ===
+                0 && (
+                <p className="empty-text">
+                  No activities posted.
+                </p>
+              )}
+
+            </div>
+
+          </section>
+        )}
+
+        {/* ===================================================
+            ANNOUNCEMENTS
+        ==================================================== */}
+
+        {activeTab ===
+          "announcements" && (
+          <section className="page-section">
+
+            <div className="page-heading">
+
+              <div>
+                <h3>
+                  Announcements
+                </h3>
+
+                <p>
+                  Manage official
+                  portal
+                  announcements.
+                </p>
+              </div>
+
+            </div>
+
+            <div className="form-card">
+
+              <form
+                onSubmit={
+                  handleSaveAnnouncement
+                }
+                className="admin-form"
+              >
+
+                <div className="form-grid">
+
+                  <div className="form-field">
+
+                    <label>
+                      Badge
+                    </label>
+
+                    <input
+                      type="text"
+                      value={
+                        announcementForm.badge
+                      }
+                      onChange={(e) =>
+                        setAnnouncementForm({
+                          ...announcementForm,
+                          badge:
+                            e.target.value,
+                        })
+                      }
+                      required
+                    />
+
                   </div>
 
-                  <h4>
-                    No Staff Members
-                  </h4>
+                  <div className="form-field">
 
-                  <p>
-                    Add your first staff member
-                    using the form above.
-                  </p>
+                    <label>
+                      Date
+                    </label>
+
+                    <input
+                      type="text"
+                      value={
+                        announcementForm.date
+                      }
+                      onChange={(e) =>
+                        setAnnouncementForm({
+                          ...announcementForm,
+                          date:
+                            e.target.value,
+                        })
+                      }
+                      required
+                    />
+
+                  </div>
 
                 </div>
 
-              ) : (
+                <div className="form-field">
 
-                staff.map((item) => (
+                  <label>
+                    Tag
+                  </label>
 
+                  <input
+                    type="text"
+                    value={
+                      announcementForm.tag
+                    }
+                    onChange={(e) =>
+                      setAnnouncementForm({
+                        ...announcementForm,
+                        tag:
+                          e.target.value,
+                      })
+                    }
+                    required
+                  />
+
+                </div>
+
+                <div className="form-field">
+
+                  <label>
+                    Title
+                  </label>
+
+                  <input
+                    type="text"
+                    value={
+                      announcementForm.title
+                    }
+                    onChange={(e) =>
+                      setAnnouncementForm({
+                        ...announcementForm,
+                        title:
+                          e.target.value,
+                      })
+                    }
+                    required
+                  />
+
+                </div>
+
+                <div className="form-field">
+
+                  <label>
+                    Description
+                  </label>
+
+                  <textarea
+                    rows="5"
+                    value={
+                      announcementForm.description
+                    }
+                    onChange={(e) =>
+                      setAnnouncementForm({
+                        ...announcementForm,
+                        description:
+                          e.target.value,
+                      })
+                    }
+                    required
+                  />
+
+                </div>
+
+                <button
+                  type="submit"
+                  className="primary-button"
+                  disabled={
+                    loading
+                  }
+                >
+                  Publish Announcement
+                </button>
+
+              </form>
+
+            </div>
+
+            <div className="content-list-section">
+
+              <div className="list-header">
+
+                <h4>
+                  Published Announcements
+                </h4>
+
+                <span>
+                  {
+                    announcements.length
+                  }
+                </span>
+
+              </div>
+
+              {announcements.map(
+                (item) => (
                   <div
-                    key={item.id}
-                    className="staff-admin-card"
+                    key={
+                      item.id
+                    }
+                    className="content-list-item"
                   >
 
-                    <div className="staff-admin-photo">
+                    <div className="content-list-info">
+
+                      <span className="mini-badge">
+                        {
+                          item.badge
+                        }
+                      </span>
+
+                      <strong>
+                        {
+                          item.title
+                        }
+                      </strong>
+
+                      <span>
+                        {item.date} ·{" "}
+                        {item.tag}
+                      </span>
+
+                    </div>
+
+                    <button
+                      type="button"
+                      className="table-delete"
+                      onClick={() =>
+                        handleDeleteAnnouncement(
+                          item.id
+                        )
+                      }
+                    >
+                      Delete
+                    </button>
+
+                  </div>
+                )
+              )}
+
+              {announcements.length ===
+                0 && (
+                <p className="empty-text">
+                  No announcements posted.
+                </p>
+              )}
+
+            </div>
+
+          </section>
+        )}
+
+        {/* ===================================================
+            FACILITIES
+        ==================================================== */}
+
+        {activeTab ===
+          "facilities" && (
+          <section className="page-section">
+
+            <div className="page-heading">
+
+              <div>
+                <h3>
+                  Facilities
+                </h3>
+
+                <p>
+                  Manage facilities
+                  displayed on the
+                  portal.
+                </p>
+              </div>
+
+            </div>
+
+            <div className="form-card">
+
+              <form
+                onSubmit={
+                  handleSaveFacility
+                }
+                className="admin-form"
+              >
+
+                <div className="form-field">
+
+                  <label>
+                    Facility Title
+                  </label>
+
+                  <input
+                    type="text"
+                    value={
+                      facilityForm.title
+                    }
+                    onChange={(e) =>
+                      setFacilityForm({
+                        ...facilityForm,
+                        title:
+                          e.target.value,
+                      })
+                    }
+                    required
+                  />
+
+                </div>
+
+                <div className="form-field">
+
+                  <label>
+                    Facility Image
+                  </label>
+
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) =>
+                      setFacilityFile(
+                        e.target
+                          .files[0] ||
+                          null
+                      )
+                    }
+                  />
+
+                </div>
+
+                <div className="form-field">
+
+                  <label>
+                    Image URL
+                  </label>
+
+                  <input
+                    type="text"
+                    value={
+                      facilityForm.image
+                    }
+                    onChange={(e) =>
+                      setFacilityForm({
+                        ...facilityForm,
+                        image:
+                          e.target.value,
+                      })
+                    }
+                  />
+
+                </div>
+
+                <div className="form-field">
+
+                  <label>
+                    Description
+                  </label>
+
+                  <textarea
+                    rows="5"
+                    value={
+                      facilityForm.description
+                    }
+                    onChange={(e) =>
+                      setFacilityForm({
+                        ...facilityForm,
+                        description:
+                          e.target.value,
+                      })
+                    }
+                    required
+                  />
+
+                </div>
+
+                <button
+                  type="submit"
+                  className="primary-button"
+                  disabled={
+                    loading
+                  }
+                >
+                  Add Facility
+                </button>
+
+              </form>
+
+            </div>
+
+            <div className="content-list-section">
+
+              <div className="list-header">
+
+                <h4>
+                  Facilities
+                </h4>
+
+                <span>
+                  {
+                    facilities.length
+                  }
+                </span>
+
+              </div>
+
+              {facilities.map(
+                (item) => (
+                  <div
+                    key={
+                      item.id
+                    }
+                    className="content-list-item"
+                  >
+
+                    {item.image && (
+                      <img
+                        src={
+                          item.image
+                        }
+                        alt=""
+                      />
+                    )}
+
+                    <div className="content-list-info">
+
+                      <strong>
+                        {
+                          item.title
+                        }
+                      </strong>
+
+                      <span>
+                        {item.description?.substring(
+                          0,
+                          100
+                        )}
+                      </span>
+
+                    </div>
+
+                    <button
+                      type="button"
+                      className="table-delete"
+                      onClick={() =>
+                        handleDeleteFacility(
+                          item.id
+                        )
+                      }
+                    >
+                      Delete
+                    </button>
+
+                  </div>
+                )
+              )}
+
+              {facilities.length ===
+                0 && (
+                <p className="empty-text">
+                  No facilities
+                  added.
+                </p>
+              )}
+
+            </div>
+
+          </section>
+        )}
+
+        {/* ===================================================
+            STAFF
+        ==================================================== */}
+
+        {activeTab ===
+          "staff" && (
+          <section className="page-section">
+
+            <div className="page-heading">
+
+              <div>
+                <h3>
+                  Staff Management
+                </h3>
+
+                <p>
+                  Manage staff members
+                  shown on the
+                  portal.
+                </p>
+              </div>
+
+            </div>
+
+            <div className="form-card">
+
+              <form
+                onSubmit={
+                  handleSaveStaff
+                }
+                className="admin-form"
+              >
+
+                <div className="form-grid">
+
+                  <div className="form-field">
+
+                    <label>
+                      Full Name
+                    </label>
+
+                    <input
+                      type="text"
+                      value={
+                        staffForm.name
+                      }
+                      placeholder="Juan Dela Cruz"
+                      onChange={(e) =>
+                        setStaffForm({
+                          ...staffForm,
+                          name:
+                            e.target.value,
+                        })
+                      }
+                      required
+                    />
+
+                  </div>
+
+                  <div className="form-field">
+
+                    <label>
+                      Position
+                    </label>
+
+                    <input
+                      type="text"
+                      value={
+                        staffForm.position
+                      }
+                      placeholder="University Librarian"
+                      onChange={(e) =>
+                        setStaffForm({
+                          ...staffForm,
+                          position:
+                            e.target.value,
+                        })
+                      }
+                      required
+                    />
+
+                  </div>
+
+                </div>
+
+                <div className="form-field">
+
+                  <label>
+                    Staff Photo
+                  </label>
+
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/webp"
+                    onChange={(e) =>
+                      setStaffFile(
+                        e.target
+                          .files[0] ||
+                          null
+                      )
+                    }
+                  />
+
+                </div>
+
+                {staffForm.image &&
+                  !staffFile && (
+                    <div className="current-image">
+
+                      <span>
+                        Current Photo
+                      </span>
+
+                      <img
+                        src={
+                          staffForm.image
+                        }
+                        alt={
+                          staffForm.name
+                        }
+                      />
+
+                    </div>
+                  )}
+
+                <div className="form-buttons">
+
+                  <button
+                    type="submit"
+                    className="primary-button"
+                    disabled={
+                      loading
+                    }
+                  >
+                    {loading
+                      ? "Saving..."
+                      : isEditingStaff
+                      ? "Update Staff"
+                      : "Add Staff"}
+                  </button>
+
+                  {isEditingStaff && (
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={
+                        resetStaffForm
+                      }
+                    >
+                      Cancel
+                    </button>
+                  )}
+
+                </div>
+
+              </form>
+
+            </div>
+
+            <div className="staff-grid">
+
+              {staff.map(
+                (item) => (
+                  <div
+                    key={
+                      item.id
+                    }
+                    className="staff-card"
+                  >
+
+                    <div className="staff-photo">
 
                       {item.image ? (
-
                         <img
-                          src={item.image}
-                          alt={item.name}
+                          src={
+                            item.image
+                          }
+                          alt={
+                            item.name
+                          }
                         />
-
                       ) : (
-
-                        <div className="staff-no-photo">
-                          👤
-                        </div>
-
+                        <span>
+                          {item.name
+                            ?.charAt(
+                              0
+                            )
+                            .toUpperCase()}
+                        </span>
                       )}
 
                     </div>
 
-                    <div className="staff-admin-info">
+                    <div className="staff-info">
 
-                      <h4>
-                        {item.name}
-                      </h4>
+                      <strong>
+                        {
+                          item.name
+                        }
+                      </strong>
 
-                      <p>
-                        {item.position}
-                      </p>
+                      <span>
+                        {
+                          item.position
+                        }
+                      </span>
 
                     </div>
 
-                    <div className="staff-admin-actions">
+                    <div className="action-group">
 
                       <button
-                        className="btn-edit"
+                        type="button"
+                        className="table-edit"
                         onClick={() =>
-                          handleEditStaff(item)
+                          handleEditStaff(
+                            item
+                          )
                         }
                       >
                         Edit
                       </button>
 
                       <button
-                        className="btn-delete"
+                        type="button"
+                        className="table-delete"
                         onClick={() =>
-                          handleDeleteStaff(item.id)
+                          handleDeleteStaff(
+                            item.id
+                          )
                         }
                       >
                         Delete
@@ -1815,9 +3623,7 @@ function AdminControl() {
                     </div>
 
                   </div>
-
-                ))
-
+                )
               )}
 
             </div>
@@ -1826,67 +3632,106 @@ function AdminControl() {
         )}
 
         {/* ===================================================
-            TAB 6 — VISION & MISSION
+            VISION
         ==================================================== */}
 
-        {activeTab === "vision" && (
-          <section className="admin-section">
+        {activeTab ===
+          "vision" && (
+          <section className="page-section">
 
-            <h3>
-              Manage Vision & Mission
-            </h3>
+            <div className="page-heading">
 
-            <form
-              onSubmit={handleSaveVisionMission}
-              className="admin-form"
-            >
+              <div>
+                <h3>
+                  Vision & Mission
+                </h3>
 
-              <label>
-                Vision Statement
-              </label>
+                <p>
+                  Update the
+                  institution's
+                  vision and mission
+                  statements.
+                </p>
+              </div>
 
-              <textarea
-                value={visionMission.vision || ""}
-                onChange={(e) =>
-                  setVisionMission({
-                    ...visionMission,
-                    vision: e.target.value,
-                  })
+            </div>
+
+            <div className="form-card">
+
+              <form
+                onSubmit={
+                  handleSaveVisionMission
                 }
-                rows="4"
-                required
-              />
-
-              <label>
-                Mission Statement
-              </label>
-
-              <textarea
-                value={visionMission.mission || ""}
-                onChange={(e) =>
-                  setVisionMission({
-                    ...visionMission,
-                    mission: e.target.value,
-                  })
-                }
-                rows="4"
-                required
-              />
-
-              <button
-                type="submit"
-                className="primary-button"
-                disabled={loading}
+                className="admin-form"
               >
-                Save Changes
-              </button>
 
-            </form>
+                <div className="form-field">
+
+                  <label>
+                    Vision Statement
+                  </label>
+
+                  <textarea
+                    rows="6"
+                    value={
+                      visionMission.vision ||
+                      ""
+                    }
+                    onChange={(e) =>
+                      setVisionMission({
+                        ...visionMission,
+                        vision:
+                          e.target.value,
+                      })
+                    }
+                    required
+                  />
+
+                </div>
+
+                <div className="form-field">
+
+                  <label>
+                    Mission Statement
+                  </label>
+
+                  <textarea
+                    rows="6"
+                    value={
+                      visionMission.mission ||
+                      ""
+                    }
+                    onChange={(e) =>
+                      setVisionMission({
+                        ...visionMission,
+                        mission:
+                          e.target.value,
+                      })
+                    }
+                    required
+                  />
+
+                </div>
+
+                <button
+                  type="submit"
+                  className="primary-button"
+                  disabled={
+                    loading
+                  }
+                >
+                  Save Changes
+                </button>
+
+              </form>
+
+            </div>
 
           </section>
         )}
 
       </main>
+
     </div>
   );
 }
