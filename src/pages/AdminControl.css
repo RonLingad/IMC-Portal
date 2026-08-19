@@ -191,8 +191,7 @@
 
   padding-top: 15px;
 
-  border-top: 1px solid
-    rgba(255, 255, 255, 0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .admin-profile {
@@ -255,8 +254,7 @@
 
   color: #c8d5e3;
 
-  border: 1px solid
-    rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.12);
 
   border-radius: 4px;
 
@@ -982,15 +980,98 @@
   overflow-x: auto;
 }
 
+/*
+   IMPORTANT:
+   Keep enough width for all request columns.
+   This prevents Assigned Staff and Status from
+   visually collapsing into Details.
+*/
+
 .admin-table {
   width: 100%;
+  min-width: 1080px;
 
   border-collapse: collapse;
+
+  table-layout: fixed;
 
   text-align: left;
 
   font-size: 0.78rem;
 }
+
+
+/* =========================================================
+   REQUEST TABLE COLUMN WIDTHS
+   ========================================================= */
+
+/*
+   1 - Requester
+*/
+
+.admin-table th:nth-child(1),
+.admin-table td:nth-child(1) {
+  width: 14%;
+}
+
+/*
+   2 - Email
+*/
+
+.admin-table th:nth-child(2),
+.admin-table td:nth-child(2) {
+  width: 17%;
+}
+
+/*
+   3 - Date Requested
+*/
+
+.admin-table th:nth-child(3),
+.admin-table td:nth-child(3) {
+  width: 13%;
+}
+
+/*
+   4 - Request Type
+*/
+
+.admin-table th:nth-child(4),
+.admin-table td:nth-child(4) {
+  width: 13%;
+}
+
+/*
+   5 - Details
+*/
+
+.admin-table th:nth-child(5),
+.admin-table td:nth-child(5) {
+  width: 23%;
+}
+
+/*
+   6 - Assigned Staff
+*/
+
+.admin-table th:nth-child(6),
+.admin-table td:nth-child(6) {
+  width: 12%;
+}
+
+/*
+   7 - Status
+*/
+
+.admin-table th:nth-child(7),
+.admin-table td:nth-child(7) {
+  width: 8%;
+}
+
+
+/* =========================================================
+   TABLE HEADER
+   ========================================================= */
 
 .admin-table th {
   padding: 11px 14px;
@@ -1009,7 +1090,14 @@
   letter-spacing: 0.05em;
 
   white-space: nowrap;
+
+  vertical-align: middle;
 }
+
+
+/* =========================================================
+   TABLE CELLS
+   ========================================================= */
 
 .admin-table td {
   padding: 12px 14px;
@@ -1019,6 +1107,8 @@
   border-bottom: 1px solid #edf0f3;
 
   vertical-align: middle;
+
+  overflow-wrap: anywhere;
 }
 
 .admin-table tbody tr:hover {
@@ -1029,10 +1119,68 @@
   border-bottom: none;
 }
 
+
+/* =========================================================
+   REQUEST TABLE - DETAILS
+   ========================================================= */
+
+.admin-table td:nth-child(5) {
+  vertical-align: middle;
+
+  line-height: 1.5;
+}
+
+.admin-table td:nth-child(5) > div {
+  max-width: 100%;
+}
+
+
+/* =========================================================
+   REQUEST TABLE - ASSIGNED STAFF
+   ========================================================= */
+
+.admin-table td:nth-child(6) {
+  vertical-align: middle;
+
+  color: #0d2947;
+
+  font-weight: 600;
+
+  overflow-wrap: anywhere;
+}
+
+.admin-table th:nth-child(6) {
+  text-align: left;
+}
+
+
+/* =========================================================
+   REQUEST TABLE - STATUS
+   ========================================================= */
+
+.admin-table td:nth-child(7) {
+  vertical-align: middle;
+
+  text-align: center;
+
+  white-space: nowrap;
+}
+
+.admin-table th:nth-child(7) {
+  text-align: center;
+}
+
+
+/* =========================================================
+   REQUEST TABLE CONTENT HELPERS
+   ========================================================= */
+
 .email-cell {
   color: #172033;
 
   font-size: 0.78rem;
+
+  overflow-wrap: anywhere;
 }
 
 .id-cell {
@@ -1047,6 +1195,7 @@
   font-size: 0.66rem;
 
   text-overflow: ellipsis;
+
   white-space: nowrap;
 }
 
@@ -1056,6 +1205,48 @@
   color: #98a2b3 !important;
 
   text-align: center;
+}
+
+
+/* =========================================================
+   REQUEST DETAILS
+   ========================================================= */
+
+.request-details {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 3px;
+
+  min-width: 0;
+
+  line-height: 1.45;
+}
+
+.request-details span {
+  display: block;
+
+  overflow-wrap: anywhere;
+}
+
+
+/* =========================================================
+   ASSIGNED STAFF
+   ========================================================= */
+
+.assigned-staff {
+  display: block;
+
+  width: 100%;
+
+  color: #0d2947;
+
+  font-weight: 600;
+
+  line-height: 1.4;
+
+  overflow-wrap: anywhere;
 }
 
 
@@ -1205,14 +1396,23 @@
    ========================================================= */
 
 .status-badge {
-  display: inline-block;
+  display: inline-flex;
 
-  padding: 4px 7px;
+  align-items: center;
+  justify-content: center;
+
+  padding: 4px 8px;
+
+  min-width: 68px;
 
   border-radius: 3px;
 
   font-size: 0.64rem;
   font-weight: 600;
+
+  line-height: 1.2;
+
+  white-space: nowrap;
 }
 
 .status-badge.pending {
@@ -1340,21 +1540,6 @@
 /* =========================================================
    STAFF
    ========================================================= */
-
-/*
-   IMPORTANT FIX:
-
-   The original staff card used:
-       align-items: center;
-
-   and the name used:
-       white-space: nowrap;
-
-   This caused long names/positions to become squeezed.
-
-   The staff card below uses a cleaner structure:
-   PHOTO | NAME + POSITION | ACTIONS
-*/
 
 .staff-grid {
   display: grid;
@@ -1726,7 +1911,10 @@
     width: 100%;
   }
 
-  /* STAFF */
+
+  /* =======================================================
+     STAFF
+     ======================================================= */
 
   .staff-card {
     gap: 12px;
@@ -1804,6 +1992,15 @@
 
   .content-list-item .table-delete {
     margin-left: auto;
+  }
+
+
+  /* =======================================================
+     REQUEST TABLE MOBILE
+  ======================================================= */
+
+  .admin-table {
+    min-width: 1000px;
   }
 
 

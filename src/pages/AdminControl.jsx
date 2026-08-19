@@ -588,9 +588,14 @@ function AdminControl() {
      REQUEST RECORDS
   ========================================================= */
 
-  const fetchRequests = async () => {
-    try {
-      const { data, error } = await supabase
+ const fetchRequests = async () => {
+  try {
+    /* =====================================================
+       GET REQUEST RECORDS
+    ===================================================== */
+
+    const { data: requestData, error: requestError } =
+      await supabase
         .from("library_requests")
         .select(`
           id,
@@ -608,26 +613,89 @@ function AdminControl() {
           ascending: false,
         });
 
-      if (error) {
-        throw error;
+    if (requestError) {
+      throw requestError;
+    }
+
+    const requests = requestData || [];
+
+    /* =====================================================
+       GET ASSIGNED STAFF IDS
+    ===================================================== */
+
+    const staffIds = [
+      ...new Set(
+        requests
+          .map(
+            (request) =>
+              request.assigned_staff_id
+          )
+          .filter(Boolean)
+      ),
+    ];
+
+    /* =====================================================
+       GET STAFF EMAILS FROM PROFILES
+    ===================================================== */
+
+    let staffEmailMap = {};
+
+    if (staffIds.length > 0) {
+      const {
+        data: staffUsers,
+        error: staffUsersError,
+      } = await supabase
+        .from("profiles")
+        .select("id, email")
+        .in("id", staffIds);
+
+      if (staffUsersError) {
+        throw staffUsersError;
       }
 
-      setRequests(data || []);
-    } catch (error) {
-      console.error(
-        "Fetch library requests error:",
-        error
-      );
-
-      setRequests([]);
-
-      showMessage(
-        error?.message ||
-          "Unable to load library request records.",
-        "error"
+      staffEmailMap = (
+        staffUsers || []
+      ).reduce(
+        (map, user) => {
+          map[user.id] = user.email;
+          return map;
+        },
+        {}
       );
     }
-  };
+
+    /* =====================================================
+       ADD STAFF EMAIL TO EACH REQUEST
+    ===================================================== */
+
+    const requestsWithStaffEmail =
+      requests.map((request) => ({
+        ...request,
+
+        assigned_staff_email:
+          staffEmailMap[
+            request.assigned_staff_id
+          ] || null,
+      }));
+
+    setRequests(
+      requestsWithStaffEmail
+    );
+  } catch (error) {
+    console.error(
+      "Fetch library requests error:",
+      error
+    );
+
+    setRequests([]);
+
+    showMessage(
+      error?.message ||
+        "Unable to load library request records.",
+      "error"
+    );
+  }
+};
 
   /* =========================================================
      REQUEST FILTERING
@@ -649,7 +717,7 @@ function AdminControl() {
 
       const assignedStaff =
         String(
-          request.assigned_staff_id || ""
+          request.assigned_staff_email || ""
         ).toLowerCase();
 
       const requestDetails =
@@ -3062,47 +3130,36 @@ function AdminControl() {
                             </td>
 
                             <td>
+  <span
+    title={request.details || ""}
+  >
+    {request.details
+      ? request.details.length > 60
+        ? `${request.details.substring(0, 60)}...`
+        : request.details
+      : "—"}
+  </span>
+</td>
 
-                              <span
-                                title={
-                                  request.details ||
-                                  ""
-                                }
-                              >
-                                {request.details
-                                  ? request.details
-                                      .length >
-                                    60
-                                    ? `${request.details.substring(
-                                        0,
-                                        60
-                                      )}...`
-                                    : request.details
-                                  : "—"}
-                              </span>
+<td>
+  {request.assigned_staff_email ? (
+    <strong className="email-cell">
+      {request.assigned_staff_email}
+    </strong>
+  ) : (
+    "Unassigned"
+  )}
+</td>
 
-                            </td>
-
-                            <td>
-
-                              {request.assigned_staff_id ||
-                                "Unassigned"}
-
-                            </td>
-
-                            <td>
-
-                              <span
-                                className={`status-badge ${getStatusClass(
-                                  request.status
-                                )}`}
-                              >
-                                {formatStatus(
-                                  request.status
-                                )}
-                              </span>
-
-                            </td>
+<td>
+  <span
+    className={`status-badge ${getStatusClass(
+      request.status
+    )}`}
+  >
+    {formatStatus(request.status)}
+  </span>
+</td>
 
                           </tr>
                         )
