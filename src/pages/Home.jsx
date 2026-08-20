@@ -1,4 +1,6 @@
+
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { supabase } from "../services/supabase";
 import "./Home.css";
 
@@ -197,6 +199,15 @@ function Home() {
   // =====================================================
   // INITIAL LOAD + REALTIME
   // =====================================================
+
+  useEffect(() => {
+    // Defensive reset: the IMC page must start at the viewport's top.
+    document.documentElement.style.margin = "0";
+    document.documentElement.style.padding = "0";
+    document.body.style.margin = "0";
+    document.body.style.padding = "0";
+    document.body.style.width = "100%";
+  }, []);
 
   useEffect(() => {
     fetchHomeData();
@@ -403,6 +414,8 @@ function Home() {
           HEADER
       ================================================= */}
 
+      {createPortal(
+        <>
       <header className="main-header">
 
         <div className="container header-container">
@@ -667,6 +680,9 @@ function Home() {
         </nav>
 
       </header>
+        </>,
+        document.body
+      )}
 
       {/* =================================================
           MAIN
@@ -1819,3 +1835,4 @@ function Home() {
 }
 
 export default Home;
+

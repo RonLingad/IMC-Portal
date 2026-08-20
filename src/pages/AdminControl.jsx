@@ -3130,36 +3130,36 @@ function AdminControl() {
                             </td>
 
                             <td>
-  <span
-    title={request.details || ""}
-  >
-    {request.details
-      ? request.details.length > 60
-        ? `${request.details.substring(0, 60)}...`
-        : request.details
-      : "—"}
-  </span>
-</td>
+                            <span
+                              title={request.details || ""}
+                            >
+                              {request.details
+                                ? request.details.length > 60
+                                  ? `${request.details.substring(0, 60)}...`
+                                  : request.details
+                                : "—"}
+                            </span>
+                          </td>
 
-<td>
-  {request.assigned_staff_email ? (
-    <strong className="email-cell">
-      {request.assigned_staff_email}
-    </strong>
-  ) : (
-    "Unassigned"
-  )}
-</td>
+                          <td>
+                            {request.assigned_staff_email ? (
+                              <strong className="email-cell">
+                                {request.assigned_staff_email}
+                              </strong>
+                            ) : (
+                              "Unassigned"
+                            )}
+                          </td>
 
-<td>
-  <span
-    className={`status-badge ${getStatusClass(
-      request.status
-    )}`}
-  >
-    {formatStatus(request.status)}
-  </span>
-</td>
+                          <td>
+                            <span
+                              className={`status-badge ${getStatusClass(
+                                request.status
+                              )}`}
+                            >
+                              {formatStatus(request.status)}
+                            </span>
+                          </td>
 
                           </tr>
                         )

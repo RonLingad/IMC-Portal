@@ -44,7 +44,12 @@
 }
 
 html {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100%;
   scroll-behavior: smooth;
+  scroll-padding-top: 82px;
 }
 
 body {
@@ -55,12 +60,29 @@ body {
     Arial,
     sans-serif;
 
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100%;
+  min-height: 100vh;
+
   background: var(--imc-white);
   color: var(--imc-text);
 
   line-height: 1.6;
 
   overflow-x: hidden;
+}
+
+/*
+  IMPORTANT:
+  Prevent Vite/App/root styles from creating a white strip above
+  the fixed header.
+*/
+#root {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 button,
@@ -94,24 +116,57 @@ img {
   margin: 0 auto;
 }
 
+/*
+  Header is fixed, so reserve its visual height in the page content.
+  This does NOT create a gap above the header.
+*/
+.imc-home {
+  padding-top: 82px;
+}
+
 
 /* =========================================================
    HEADER
    ========================================================= */
 
 .main-header {
-  position: sticky;
-  top: 0;
-  z-index: 1000;
+  /*
+    DO NOT change this to sticky.
+    The IMC header is intentionally fixed to the browser viewport.
+  */
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  left: 0 !important;
+
+  width: 100% !important;
+  height: 82px;
+
+  margin: 0 !important;
+  padding: 0 !important;
+
+  z-index: 2147483647 !important;
 
   background: rgba(255, 255, 255, 0.98);
 
+  border-top: 0 !important;
+  border-right: 0 !important;
+  border-left: 0 !important;
   border-bottom: 3px solid var(--imc-navy);
 
   backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+
+  /*
+    Prevent transforms/animations on this element from changing
+    its fixed positioning behavior.
+  */
+  transform: none !important;
+  animation: none !important;
 }
 
 .header-container {
+  height: 82px;
   min-height: 82px;
 
   display: flex;
@@ -264,6 +319,7 @@ img {
 
 .nav-dropdown-menu {
   position: absolute;
+  z-index: 2147483646;
 
   top: calc(100% + 8px);
   left: 50%;
@@ -2497,19 +2553,29 @@ button.active {
 
 @media (max-width: 900px) {
 
+  html {
+    scroll-padding-top: 70px;
+  }
+
   .container {
     width:
       calc(100% - 28px);
+  }
+
+  .imc-home {
+    padding-top: 70px;
   }
 
 
   /* HEADER */
 
   .main-header {
+    height: 70px !important;
     border-bottom-width: 3px;
   }
 
   .header-container {
+    height: 70px;
     min-height: 70px;
 
     gap: 10px;
@@ -2554,6 +2620,9 @@ button.active {
   /* MOBILE NAV */
 
   .mobile-navigation {
+    position: relative;
+    z-index: 2147483647;
+
     display: flex;
 
     flex-direction: column;
