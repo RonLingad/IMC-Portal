@@ -3256,3 +3256,1040 @@ a:focus-visible {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* =========================================================
+   LARGE PC / DESKTOP
+   OPTIMIZED FOR 1920 × 1080
+   ---------------------------------------------------------
+   IMPORTANT:
+   This section only affects large PC monitors.
+   Tablet and mobile layouts remain unchanged.
+   ========================================================= */
+
+@media (min-width: 1400px) {
+
+  /* =====================================================
+     GLOBAL LARGE PC CONTAINER
+     ===================================================== */
+
+  .container {
+    width: min(100% - 100px, 1580px);
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+
+  /* =====================================================
+     HEADER
+     ===================================================== */
+
+  .main-header {
+    height: 100px;
+  }
+
+  .header-container {
+    width: min(100% - 100px, 1720px);
+
+    height: 100px;
+    min-height: 100px;
+
+    gap: 45px;
+  }
+
+
+  /* =====================================================
+     BRAND
+     ===================================================== */
+
+  .brand {
+    min-width: 300px;
+
+    gap: 16px;
+  }
+
+  .brand-logo {
+    width: 62px;
+    height: 62px;
+  }
+
+  .brand-name {
+    font-size: 1.18rem;
+  }
+
+  .brand-subtitle {
+    margin-top: 6px;
+
+    font-size: 0.76rem;
+
+    letter-spacing: 0.09em;
+  }
+
+
+  /* =====================================================
+     NAVIGATION
+     ===================================================== */
+
+  .main-navigation {
+    gap: 7px;
+  }
+
+  .main-navigation > a,
+  .nav-dropdown-button {
+    padding: 12px 15px;
+
+    font-size: 0.96rem;
+  }
+
+  .main-navigation > a::after,
+  .nav-dropdown-button::after {
+    left: 14px;
+    right: 14px;
+    bottom: 3px;
+
+    height: 3px;
+  }
+
+  .nav-dropdown-button {
+    gap: 7px;
+  }
+
+  .dropdown-arrow {
+    font-size: 0.7rem;
+  }
+
+
+  /* =====================================================
+     DROPDOWN
+     ===================================================== */
+
+  .nav-dropdown-menu {
+    width: 280px;
+
+    top: calc(100% + 10px);
+  }
+
+  .nav-dropdown-item {
+    padding: 15px 18px;
+  }
+
+  .nav-dropdown-item:hover {
+    padding-left: 23px;
+  }
+
+  .dropdown-item-title {
+    font-size: 0.92rem;
+  }
+
+  .dropdown-item-description {
+    margin-top: 4px;
+
+    font-size: 0.76rem;
+  }
+
+
+  /* =====================================================
+     HEADER LOGIN
+     ===================================================== */
+
+  .header-actions {
+    gap: 14px;
+  }
+
+  .header-login {
+    min-width: 100px;
+
+    padding: 11px 19px;
+
+    font-size: 0.92rem;
+  }
+
+
+  /* =====================================================
+     MAIN PAGE OFFSET
+     ===================================================== */
+
+  .imc-home {
+    padding-top: 100px;
+  }
+
+
+  /* =====================================================
+     HERO
+     ===================================================== */
+
+  .hero-container {
+    min-height: 690px;
+
+    grid-template-columns:
+      minmax(0, 1.45fr)
+      minmax(380px, 0.75fr);
+
+    gap: 85px;
+
+    padding-top: 75px;
+    padding-bottom: 75px;
+  }
+
+
+  /* =====================================================
+     HERO CONTENT
+     ===================================================== */
+
+  .hero-label {
+    padding-left: 15px;
+
+    border-left-width: 4px;
+
+    font-size: 0.84rem;
+  }
+
+  .hero-content h1 {
+    max-width: 850px;
+
+    margin-top: 22px;
+
+    font-size: clamp(
+      3.8rem,
+      5vw,
+      5.8rem
+    );
+  }
+
+  .hero-content p {
+    max-width: 760px;
+
+    margin-top: 28px;
+
+    font-size: 1.12rem;
+
+    line-height: 1.85;
+  }
+
+
+  /* =====================================================
+     HERO BUTTONS
+     ===================================================== */
+
+  .hero-actions {
+    gap: 16px;
+
+    margin-top: 35px;
+  }
+
+  .primary-button,
+  .secondary-button {
+    min-height: 52px;
+
+    padding: 12px 23px;
+
+    font-size: 0.94rem;
+  }
+
+
+  /* =====================================================
+     HERO INFO CARD
+     ===================================================== */
+
+  .hero-info-card {
+    border-width: 3px;
+  }
+
+  .hero-card-header {
+    gap: 10px;
+
+    padding: 17px 21px;
+
+    font-size: 0.82rem;
+  }
+
+  .hero-card-dot {
+    width: 9px;
+    height: 9px;
+  }
+
+  .hero-card-item {
+    padding: 21px 23px;
+  }
+
+  .hero-card-item strong {
+    font-size: 1.02rem;
+  }
+
+  .hero-card-item span {
+    margin-top: 4px;
+
+    font-size: 0.82rem;
+  }
+
+
+  /* =====================================================
+     LATEST NEWS SECTION
+     ===================================================== */
+
+  .activities-section {
+    padding: 70px 0 62px;
+  }
+
+  .activities-section .container {
+    max-width: 1580px;
+  }
+
+  .latest-heading {
+    gap: 60px;
+
+    margin-bottom: 32px;
+  }
+
+  .latest-heading .section-label {
+    margin-bottom: 8px;
+
+    font-size: 0.8rem;
+  }
+
+  .latest-heading h2 {
+    font-size: clamp(
+      2.8rem,
+      4vw,
+      4rem
+    );
+  }
+
+  .latest-heading p {
+    max-width: 600px;
+
+    font-size: 1rem;
+  }
+
+
+  /* =====================================================
+     LATEST NEWS CARD
+     ===================================================== */
+
+  .latest-carousel {
+    gap: 25px;
+  }
+
+  .latest-news-card {
+    width: min(1200px, 100%);
+
+    min-height: 390px;
+
+    grid-template-columns: 50% 50%;
+  }
+
+  .latest-news-image {
+    min-height: 390px;
+  }
+
+  .latest-news-content {
+    padding: 45px 50px;
+  }
+
+  .latest-news-meta {
+    margin-bottom: 17px;
+
+    font-size: 0.84rem;
+  }
+
+  .latest-news-label {
+    padding: 6px 12px;
+
+    font-size: 0.7rem;
+  }
+
+  .latest-news-content h3 {
+    margin-bottom: 28px;
+
+    font-size: clamp(
+      1.9rem,
+      2.5vw,
+      2.7rem
+    );
+  }
+
+  .blue-read-button {
+    padding: 12px 20px;
+
+    font-size: 0.9rem;
+  }
+
+  .blue-read-button span {
+    font-size: 1.15rem;
+  }
+
+
+  /* =====================================================
+     CAROUSEL ARROWS
+     ===================================================== */
+
+  .carousel-arrow {
+    width: 52px;
+    height: 52px;
+
+    font-size: 1.35rem;
+  }
+
+  .carousel-indicators {
+    gap: 9px;
+
+    margin-top: 23px;
+  }
+
+  .carousel-indicators button {
+    width: 32px;
+    height: 5px;
+  }
+
+  .carousel-indicators button.active {
+    width: 50px;
+  }
+
+
+  /* =====================================================
+     ANNOUNCEMENTS
+     ===================================================== */
+
+  .announcement-section {
+    padding: 70px 0;
+  }
+
+  .announcement-heading {
+    gap: 60px;
+
+    margin-bottom: 30px;
+  }
+
+  .announcement-heading h2 {
+    font-size: clamp(
+      2.8rem,
+      4vw,
+      3.8rem
+    );
+  }
+
+  .announcement-heading p {
+    max-width: 570px;
+
+    font-size: 0.98rem;
+  }
+
+
+  /* =====================================================
+     MARQUEE
+     TRUE EDGE-TO-EDGE ON PC
+     ===================================================== */
+
+  .announcement-marquee {
+    width: 100vw;
+
+    margin-left: calc(
+      50% - 50vw
+    );
+
+    margin-right: calc(
+      50% - 50vw
+    );
+
+    margin-bottom: 30px;
+  }
+
+  .marquee-item {
+    gap: 15px;
+
+    padding: 17px 34px;
+
+    font-size: 0.94rem;
+  }
+
+  .marquee-dot {
+    font-size: 1rem;
+  }
+
+
+  /* =====================================================
+     ANNOUNCEMENT LIST
+     ===================================================== */
+
+  .announcement-list {
+    gap: 9px;
+  }
+
+  .announcement-row {
+    grid-template-columns:
+      165px
+      1fr
+      auto;
+
+    gap: 30px;
+
+    padding: 22px 26px;
+  }
+
+  .announcement-row-date {
+    font-size: 0.86rem;
+  }
+
+  .announcement-row-top {
+    gap: 12px;
+
+    margin-bottom: 6px;
+  }
+
+  .announcement-row-top span {
+    font-size: 0.72rem;
+  }
+
+  .announcement-row h3 {
+    font-size: 1.08rem;
+  }
+
+  .announcement-read-button {
+    padding: 10px 17px;
+
+    font-size: 0.82rem;
+  }
+
+
+  /* =====================================================
+     SERVICES
+     ===================================================== */
+
+  .services-section {
+    padding: 75px 0;
+  }
+
+  .service-grid {
+    gap: 25px;
+
+    margin-top: 38px;
+  }
+
+  .service-card {
+    padding: 32px;
+
+    border-radius: 9px;
+  }
+
+  .service-icon {
+    width: 58px;
+    height: 58px;
+
+    margin-bottom: 21px;
+
+    font-size: 0.78rem;
+  }
+
+  .service-card h3 {
+    margin-bottom: 12px;
+
+    font-size: 1.28rem;
+  }
+
+  .service-card p {
+    margin-bottom: 23px;
+
+    font-size: 0.96rem;
+
+    line-height: 1.7;
+  }
+
+  .service-card a {
+    padding: 11px 17px;
+
+    font-size: 0.82rem;
+  }
+
+
+  /* =====================================================
+     QUICK LINKS
+     ===================================================== */
+
+  .quick-links-section {
+    padding: 75px 0;
+  }
+
+  .quick-links-grid {
+    gap: 22px;
+
+    margin-top: 38px;
+  }
+
+  .quick-link-card {
+    gap: 18px;
+
+    padding: 22px;
+  }
+
+  .quick-link-icon {
+    width: 50px;
+    height: 50px;
+
+    font-size: 1.15rem;
+  }
+
+  .quick-link-card h3 {
+    font-size: 1rem;
+  }
+
+  .quick-link-card p {
+    margin-top: 4px;
+
+    font-size: 0.77rem;
+  }
+
+
+  /* =====================================================
+     FACILITIES
+     ===================================================== */
+
+  .facilities-section {
+    padding: 70px 0;
+  }
+
+  .facility-heading {
+    gap: 60px;
+
+    margin-bottom: 30px;
+  }
+
+  .facility-heading h2 {
+    font-size: clamp(
+      2.8rem,
+      4vw,
+      3.7rem
+    );
+  }
+
+  .facility-heading p {
+    max-width: 570px;
+
+    font-size: 0.97rem;
+  }
+
+
+  /* =====================================================
+     FACILITY SLIDER
+     ===================================================== */
+
+  .facility-slider {
+    gap: 22px;
+  }
+
+  .simple-facility-card {
+    width: min(1100px, 100%);
+
+    grid-template-columns:
+      40%
+      60%;
+
+    min-height: 330px;
+  }
+
+  .simple-facility-image {
+    min-height: 330px;
+  }
+
+  .simple-facility-content {
+    padding: 42px 50px;
+  }
+
+  .facility-number {
+    top: 24px;
+    right: 30px;
+
+    font-size: 3.7rem;
+  }
+
+  .simple-facility-content h3 {
+    margin-bottom: 14px;
+
+    font-size: 1.85rem;
+  }
+
+  .simple-facility-content p {
+    max-width: 620px;
+
+    margin-bottom: 22px;
+
+    font-size: 0.96rem;
+
+    line-height: 1.7;
+  }
+
+  .facility-read-button {
+    padding: 11px 17px;
+
+    font-size: 0.82rem;
+  }
+
+  .facility-arrow {
+    width: 48px;
+    height: 48px;
+
+    font-size: 1.1rem;
+  }
+
+  .facility-indicators {
+    gap: 9px;
+
+    margin-top: 21px;
+  }
+
+  .facility-indicators button {
+    width: 30px;
+    height: 5px;
+  }
+
+  .facility-indicators button.active {
+    width: 46px;
+  }
+
+
+  /* =====================================================
+     GENERAL SECTION HEADINGS
+     ===================================================== */
+
+  .section-heading {
+    margin-bottom: 30px;
+  }
+
+  .section-label {
+    font-size: 0.78rem;
+  }
+
+  .section-heading h2 {
+    margin-top: 11px;
+
+    font-size: clamp(
+      2.7rem,
+      4vw,
+      3.7rem
+    );
+  }
+
+  .section-heading p {
+    max-width: 850px;
+
+    margin-top: 15px;
+
+    font-size: 0.98rem;
+  }
+
+
+  /* =====================================================
+     VISION / MISSION
+     ===================================================== */
+
+  .vision-section {
+    padding: 80px 0;
+  }
+
+  .vision-container {
+    gap: 75px;
+  }
+
+  .vision-intro h2 {
+    font-size: clamp(
+      2.7rem,
+      4vw,
+      3.7rem
+    );
+  }
+
+  .vision-intro p {
+    margin-top: 21px;
+
+    font-size: 0.95rem;
+  }
+
+  .vision-cards {
+    gap: 22px;
+  }
+
+  .purpose-card {
+    padding: 32px;
+  }
+
+  .purpose-number {
+    font-size: 0.78rem;
+  }
+
+  .purpose-card h3 {
+    margin-top: 18px;
+
+    font-size: 1.3rem;
+  }
+
+  .purpose-card p {
+    margin-top: 11px;
+
+    font-size: 0.87rem;
+
+    line-height: 1.8;
+  }
+
+
+  /* =====================================================
+     ABOUT
+     ===================================================== */
+
+  .intro-section {
+    padding: 75px 0;
+  }
+
+  .intro-container {
+    gap: 85px;
+  }
+
+  .intro-text {
+    padding-left: 28px;
+
+    border-left-width: 4px;
+  }
+
+  .intro-text p {
+    font-size: 0.98rem;
+
+    line-height: 1.9;
+  }
+
+
+  /* =====================================================
+     FOOTER
+     ===================================================== */
+
+  .footer-container {
+    gap: 90px;
+
+    padding-top: 70px;
+
+    padding-bottom: 60px;
+  }
+
+  .footer-brand h3 {
+    font-size: 1.35rem;
+  }
+
+  .footer-brand p {
+    max-width: 650px;
+
+    margin-top: 13px;
+
+    font-size: 0.86rem;
+  }
+
+  .footer-links {
+    gap: 50px;
+  }
+
+  .footer-links h4 {
+    margin-bottom: 13px;
+
+    font-size: 0.78rem;
+  }
+
+  .footer-links a {
+    margin-top: 8px;
+
+    font-size: 0.82rem;
+  }
+
+  .footer-bottom .container {
+    padding-top: 20px;
+
+    padding-bottom: 20px;
+  }
+
+  .footer-bottom p {
+    font-size: 0.76rem;
+  }
+
+
+  /* =====================================================
+     MODAL
+     ===================================================== */
+
+  .content-modal {
+    width: min(1050px, 100%);
+
+    max-height: 90vh;
+  }
+
+  .modal-image-wrapper {
+    max-height: 470px;
+  }
+
+  .modal-image {
+    height: 470px;
+  }
+
+  .modal-content {
+    padding: 38px 45px 42px;
+  }
+
+  .modal-content h2 {
+    font-size: 2.25rem;
+  }
+
+  .modal-description {
+    font-size: 0.98rem;
+
+    line-height: 1.85;
+  }
+
+  .modal-close {
+    width: 44px;
+    height: 44px;
+
+    top: 18px;
+    right: 18px;
+
+    font-size: 1.7rem;
+  }
+
+  .modal-close-button {
+    padding: 11px 20px;
+  }
+}
+
+
+/* =========================================================
+   VERY LARGE MONITORS
+   ---------------------------------------------------------
+   Prevents the design from becoming excessively wide on
+   2560px+ monitors while still looking proportional.
+   ========================================================= */
+
+@media (min-width: 2200px) {
+
+  .container {
+    width: min(100% - 140px, 1750px);
+  }
+
+  .header-container {
+    width: min(100% - 140px, 1850px);
+  }
+
+  .activities-section .container {
+    max-width: 1750px;
+  }
+}
+/* =========================================================
+   MODAL CLICK / STACKING FIX ONLY
+   ---------------------------------------------------------
+   IMPORTANT: This section does NOT change the modal design.
+   It only places the existing modal above the fixed header
+   so the existing X/close button can receive clicks.
+   ========================================================= */
+
+.content-modal-overlay {
+  z-index: 2147483648 !important;
+  pointer-events: auto !important;
+}
+
+.content-modal {
+  position: relative;
+  z-index: 2147483648 !important;
+  pointer-events: auto !important;
+}
+
+.modal-close {
+  position: absolute !important;
+  z-index: 2147483649 !important;
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+/* Keep the modal above the mobile navigation as well. */
+.mobile-navigation {
+  z-index: 2147483647 !important;
+}
+
+/* =========================================================
+   FINAL MODAL SIZE ADJUSTMENT
+   ---------------------------------------------------------
+   Keeps the existing modal design exactly the same.
+   Only reduces the overall height and width so the popup
+   does not feel oversized on desktop screens.
+   ========================================================= */
+
+.content-modal {
+  width: min(760px, calc(100vw - 40px)) !important;
+  max-height: 78vh !important;
+}
+
+.modal-image-wrapper {
+  max-height: 280px !important;
+}
+
+.modal-image {
+  height: 280px !important;
+}
+
+.modal-content {
+  padding: 24px 30px 28px !important;
+}
+
+.modal-content h2 {
+  font-size: 1.8rem !important;
+}
+
+.modal-description {
+  font-size: 0.84rem !important;
+  line-height: 1.65 !important;
+}
+
+/* Override the large-PC modal sizing while keeping the same design. */
+@media (min-width: 1400px) {
+  .content-modal {
+    width: min(760px, calc(100vw - 40px)) !important;
+    max-height: 78vh !important;
+  }
+
+  .modal-image-wrapper {
+    max-height: 280px !important;
+  }
+
+  .modal-image {
+    height: 280px !important;
+  }
+
+  .modal-content {
+    padding: 24px 30px 28px !important;
+  }
+
+  .modal-content h2 {
+    font-size: 1.8rem !important;
+  }
+
+  .modal-description {
+    font-size: 0.84rem !important;
+    line-height: 1.65 !important;
+  }
+}
+
+/* Mobile keeps its original responsive behavior. */
+@media (max-width: 700px) {
+  .content-modal {
+    width: 100% !important;
+    max-height: 94vh !important;
+  }
+
+  .modal-image {
+    height: 240px !important;
+  }
+
+  .modal-image-wrapper {
+    max-height: 240px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-image {
+    height: 210px !important;
+  }
+
+  .modal-image-wrapper {
+    max-height: 210px !important;
+  }
+}
