@@ -2329,7 +2329,7 @@ button.active {
   position: relative;
 
   width: min(850px, 100%);
-
+  margin-top: 90px;
   max-height: 90vh;
 
   overflow-y: auto;
@@ -4243,6 +4243,7 @@ a:focus-visible {
 @media (min-width: 1400px) {
   .content-modal {
     width: min(760px, calc(100vw - 40px)) !important;
+    margin-top: 100px;
     max-height: 78vh !important;
   }
 
@@ -4272,15 +4273,16 @@ a:focus-visible {
 @media (max-width: 700px) {
   .content-modal {
     width: 100% !important;
-    max-height: 94vh !important;
+    margin-top: 100px;
+    max-height: 80vh !important;
   }
 
   .modal-image {
-    height: 240px !important;
+    height: 340px !important;
   }
 
   .modal-image-wrapper {
-    max-height: 240px !important;
+    max-height: 340px !important;
   }
 }
 
